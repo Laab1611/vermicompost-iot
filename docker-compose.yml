@@ -1,0 +1,102 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vermicompost-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  telemetry-ingestion-service:
+    build:
+      context: ./telemetry-ingestion-service
+    env_file:
+      - .env
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vermicompost-net
+
+  query-monitoring-service:
+    build:
+      context: ./query-monitoring-service
+    env_file:
+      - .env
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vermicompost-net
+
+  alert-service:
+    build:
+      context: ./alert-service
+    env_file:
+      - .env
+    ports:
+      - "8003:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vermicompost-net
+
+  digital-twin-service:
+    build:
+      context: ./digital-twin-service
+    env_file:
+      - .env
+    ports:
+      - "8004:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vermicompost-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - vermicompost-net
+
+  nginx:
+    build:
+      context: ./api-gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - telemetry-ingestion-service
+      - query-monitoring-service
+      - alert-service
+      - digital-twin-service
+    networks:
+      - vermicompost-net
+
+volumes:
+  postgres_data:
+
+networks:
+  vermicompost-net:
+    driver: bridge
