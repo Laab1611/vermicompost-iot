@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+
+  - job_name: telemetry-ingestion-service
+    static_configs:
+      - targets: ['telemetry-ingestion-service:8000']
+
+  - job_name: query-monitoring-service
+    static_configs:
+      - targets: ['query-monitoring-service:8000']
+
+  - job_name: alert-service
+    static_configs:
+      - targets: ['alert-service:8000']
+
+  - job_name: digital-twin-service
+    static_configs:
+      - targets: ['digital-twin-service:8000']
