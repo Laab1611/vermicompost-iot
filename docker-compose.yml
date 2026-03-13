@@ -1,7 +1,24 @@
-version: "3.9"
-
 services:
 
+  grafana:
+    image: grafana/grafana-enterprise:latest
+    container_name: grafana-enterprise
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - vermicompost-net
+    healthcheck:
+      start_period: 30s
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
   postgres:
     image: postgres:15-alpine
     environment:
@@ -96,6 +113,7 @@ services:
 
 volumes:
   postgres_data:
+  grafana-storage:
 
 networks:
   vermicompost-net:

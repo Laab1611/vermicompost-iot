@@ -13,3 +13,6 @@ build/
 
 # Docker
 *.log
+
+#vsCode settings
+.vscode/

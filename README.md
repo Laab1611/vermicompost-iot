@@ -37,6 +37,12 @@ Sensor / Dispositivo IoT
                    ┌────────────┐
                    │ Prometheus │
                    │  :9090     │
+                   └─────┬──────┘
+                         │
+                         ▼
+                   ┌────────────┐
+                   │ Grafana    │
+                   │  :3000     │
                    └────────────┘
 ```
 
@@ -117,6 +123,7 @@ Dashboard / Grafana / Frontend
 | `postgres` | 5432 | Base de datos relacional |
 | `prometheus` | 9090 | Scraping de métricas de los 4 servicios |
 | `nginx` (api-gateway) | 80 | Reverse proxy de entrada |
+| `grafana` | 3000 | Visualización de métricas (Prometheus) |
 
 ---
 
@@ -283,7 +290,7 @@ Configurables vía `POST /api/v1/alerts/rules`.
 ### Requisitos previos
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) ≥ 24 (incluye Docker Compose v2)
-- Puertos `80`, `5432`, `8001–8004` y `9090` disponibles en la máquina local
+- Puertos `80`, `3000`, `5432`, `8001–8004` y `9090` disponibles en la máquina local
 
 Verificar que Docker está activo:
 
@@ -357,9 +364,10 @@ Salida esperada (todos en estado `Up`):
 
 ```
 NAME                                         STATUS          PORTS
+vermicompost-iot-nginx-1                     Up              0.0.0.0:80->80/tcp
 vermicompost-iot-alert-service-1             Up              0.0.0.0:8003->8000/tcp
 vermicompost-iot-digital-twin-service-1      Up              0.0.0.0:8004->8000/tcp
-vermicompost-iot-nginx-1                     Up              0.0.0.0:80->80/tcp
+vermicompost-iot-grafana-enterprise-1        Up              0.0.0.0:3000->3000/tcp
 vermicompost-iot-postgres-1                  Up (healthy)    0.0.0.0:5432->5432/tcp
 vermicompost-iot-prometheus-1                Up              0.0.0.0:9090->9090/tcp
 vermicompost-iot-query-monitoring-service-1  Up              0.0.0.0:8002->8000/tcp
@@ -418,6 +426,7 @@ curl http://localhost:8002/api/v1/monitoring/summary   # resumen del sistema
 | alert-service | http://localhost:8003 |
 | digital-twin-service | http://localhost:8004 |
 | Prometheus | http://localhost:9090 |
+| Grafana | http://localhost:3000 |
 | PostgreSQL | localhost:5432 |
 
 ---
@@ -458,5 +467,7 @@ Las variables se centralizan en el archivo `.env` en la raíz del proyecto (ver 
 | `DATABASE_URL` | Cadena de conexión completa | `postgresql://user:pass@postgres:5432/db` |
 | `ALERT_SERVICE_URL` | URL interna del alert-service | `http://alert-service:8000` |
 | `DIGITAL_TWIN_SERVICE_URL` | URL interna del digital-twin-service | `http://digital-twin-service:8000` |
+| `GRAFANA_USER` | Usuario admin para Grafana | `vermicompostingMonitor` |
+| `GRAFANA_PASSWORD` | Contraseña admin para Grafana | `vermiComposting1*` |
 
 > `ALERT_SERVICE_URL` y `DIGITAL_TWIN_SERVICE_URL` solo las utiliza `telemetry-ingestion-service`.
