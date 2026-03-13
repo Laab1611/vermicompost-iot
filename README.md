@@ -446,17 +446,6 @@ docker compose down -v
 
 ---
 
-### Solución de problemas comunes
-
-| Síntoma | Causa probable | Solución |
-|---|---|---|
-| Servicio en estado `Exited` | Error de importación o startup | `docker compose logs <servicio>` para ver el error |
-| `connection refused` en puerto 54 32 | PostgreSQL aún iniciando | Esperar ~10 s y reintentar; revisar `docker compose ps` |
-| `ModuleNotFoundError` | Dependencia no instalada | `docker compose up --build -d` para reconstruir la imagen |
-| Puerto ya en uso | Otro proceso ocupa el puerto | Cambiar el puerto en `docker-compose.yml` o liberar el puerto |
-
----
-
 ## Variables de entorno
 
 Las variables se centralizan en el archivo `.env` en la raíz del proyecto (ver `.env.example`). Docker Compose las inyecta en cada contenedor vía `env_file: .env`. Los servicios también las leen directamente con `pydantic-settings` cuando se ejecutan fuera de Docker.
