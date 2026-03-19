@@ -19,23 +19,6 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - vermicompost-net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   telemetry-ingestion-service:
     build:
@@ -44,9 +27,6 @@ services:
       - .env
     ports:
       - "8001:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - vermicompost-net
 
@@ -57,9 +37,6 @@ services:
       - .env
     ports:
       - "8002:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - vermicompost-net
 
@@ -70,9 +47,6 @@ services:
       - .env
     ports:
       - "8003:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - vermicompost-net
 
@@ -83,9 +57,6 @@ services:
       - .env
     ports:
       - "8004:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - vermicompost-net
 
@@ -112,7 +83,6 @@ services:
       - vermicompost-net
 
 volumes:
-  postgres_data:
   grafana-storage:
 
 networks:
