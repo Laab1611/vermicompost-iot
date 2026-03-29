@@ -1,35 +1,26 @@
-from pydantic import BaseModel
 from datetime import datetime
+from decimal import Decimal
 from typing import Optional
 
-
-class TwinUpdateRequest(BaseModel):
-    device_id: int
-    temperature: Optional[float] = None
-    humidity: Optional[float] = None
-    soil_moisture: Optional[float] = None
-    ph: Optional[float] = None
-    timestamp: Optional[datetime] = None
+from pydantic import BaseModel
 
 
-class TwinState(BaseModel):
-    temperature: Optional[float] = None
-    humidity: Optional[float] = None
-    soil_moisture: Optional[float] = None
-    ph: Optional[float] = None
+class NodoTwinState(BaseModel):
+    nodo_id: int
+    cama_id: int
+    codigo_nodo: str
+    ultima_lectura_recibida: Optional[datetime] = None
+    lecturas_actuales: dict[str, Optional[Decimal]]
 
 
-class TwinResponse(BaseModel):
-    device_id: int
-    current_state: TwinState
-    risk_level: str
-    updated_at: Optional[datetime] = None
-
-    model_config = {"from_attributes": True}
+class CamaTwinState(BaseModel):
+    cama_id: int
+    nombre: str
+    nodos: list[NodoTwinState]
 
 
-class SystemStateResponse(BaseModel):
-    total_units: int
-    healthy_units: int
-    warning_units: int
-    critical_units: int
+class TwinOverview(BaseModel):
+    total_camas: int
+    total_nodos: int
+    lecturas_validas: int
+    lecturas_invalidas: int
