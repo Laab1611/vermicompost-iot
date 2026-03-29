@@ -40,23 +40,13 @@ services:
     networks:
       - vermicompost-net
 
-  alert-service:
-    build:
-      context: ./alert-service
-    env_file:
-      - .env
-    ports:
-      - "8003:8000"
-    networks:
-      - vermicompost-net
-
-  digital-twin-service:
+  digital-twin-integration-service:
     build:
       context: ./digital-twin-service
     env_file:
       - .env
     ports:
-      - "8004:8000"
+      - "8003:8000"
     networks:
       - vermicompost-net
 
@@ -77,8 +67,7 @@ services:
     depends_on:
       - telemetry-ingestion-service
       - query-monitoring-service
-      - alert-service
-      - digital-twin-service
+      - digital-twin-integration-service
     networks:
       - vermicompost-net
 

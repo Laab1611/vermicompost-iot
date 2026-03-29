@@ -12,10 +12,6 @@ scrape_configs:
     static_configs:
       - targets: ['query-monitoring-service:8000']
 
-  - job_name: alert-service
+  - job_name: digital-twin-integration-service
     static_configs:
-      - targets: ['alert-service:8000']
-
-  - job_name: digital-twin-service
-    static_configs:
-      - targets: ['digital-twin-service:8000']
+      - targets: ['digital-twin-integration-service:8000']
