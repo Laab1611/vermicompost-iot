@@ -1,35 +1,71 @@
-from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional, List
+from decimal import Decimal
+from typing import Optional
+
+from pydantic import BaseModel
 
 
-class DeviceResponse(BaseModel):
-    id: int
-    name: Optional[str] = None
+class CamaResponse(BaseModel):
+    cama_id: int
+    nombre: str
+    ubicacion: str
+    latitud: Optional[Decimal] = None
+    longitud: Optional[Decimal] = None
+
+    model_config = {"from_attributes": True}
+
+
+class NodoResponse(BaseModel):
+    nodo_id: int
+    cama_id: int
+    codigo_nodo: str
     created_at: Optional[datetime] = None
+    ultima_lectura_recibida: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 
 
-class TelemetryReading(BaseModel):
-    device_id: int
-    temperature: Optional[float] = None
-    humidity: Optional[float] = None
-    soil_moisture: Optional[float] = None
-    ph: Optional[float] = None
-    timestamp: datetime
+class TipoVariableResponse(BaseModel):
+    tipo_variable_id: int
+    nombre: str
+    unidad_medida: str
 
     model_config = {"from_attributes": True}
 
 
-class DeviceStatus(BaseModel):
-    device_id: int
-    last_seen: Optional[datetime] = None
-    status: str
+class LecturaDetalle(BaseModel):
+    lectura_id: int
+    nodo_id: int
+    cama_id: int
+    codigo_nodo: str
+    tipo_variable_id: int
+    tipo_variable: str
+    unidad_medida: str
+    valor: Decimal
+    fecha_medicion: datetime
+    fecha_recepcion: datetime
+    es_valida: bool
+    motivo_invalidacion: Optional[str] = None
+
+
+class NodoEstado(BaseModel):
+    nodo_id: int
+    cama_id: int
+    codigo_nodo: str
+    ultima_lectura_recibida: Optional[datetime] = None
+    conectado: bool
+    lecturas_actuales: dict[str, Optional[Decimal]]
+
+
+class CamaEstado(BaseModel):
+    cama_id: int
+    nombre: str
+    nodos: list[NodoEstado]
 
 
 class MonitoringSummary(BaseModel):
-    total_devices: int
-    online_devices: int
-    total_readings_today: int
-    active_alerts: int
+    total_camas: int
+    total_nodos: int
+    nodos_conectados: int
+    nodos_desconectados: int
+    lecturas_invalidas: int
