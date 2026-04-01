@@ -1,0 +1,79 @@
+services:
+
+  grafana:
+    image: grafana/grafana-enterprise:latest
+    container_name: grafana-enterprise
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - vermicompost-net
+    healthcheck:
+      start_period: 30s
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  telemetry-ingestion-service:
+    build:
+      context: ./telemetry-ingestion-service
+    env_file:
+      - .env
+    ports:
+      - "8001:8000"
+    networks:
+      - vermicompost-net
+
+  query-monitoring-service:
+    build:
+      context: ./query-monitoring-service
+    env_file:
+      - .env
+    ports:
+      - "8002:8000"
+    networks:
+      - vermicompost-net
+
+  digital-twin-integration-service:
+    build:
+      context: ./digital-twin-service
+    env_file:
+      - .env
+    ports:
+      - "8003:8000"
+    networks:
+      - vermicompost-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:z
+    ports:
+      - "9090:9090"
+    networks:
+      - vermicompost-net
+
+  nginx:
+    build:
+      context: ./api-gateway
+    ports:
+      - "8080:80"
+    depends_on:
+      - telemetry-ingestion-service
+      - query-monitoring-service
+      - digital-twin-integration-service
+    networks:
+      - vermicompost-net
+
+volumes:
+  grafana-storage:
+
+networks:
+  vermicompost-net:
+    driver: bridge
