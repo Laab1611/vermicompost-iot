@@ -3,7 +3,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.exceptions import NotFoundError, PersistenceError, ValidationError
-from app.models.digital_model import CamaVermicompostaje, Lectura, NodoSensor, TipoVariable
+from app.models.digital_model import CamaVermicompostaje, Lectura, LecturaInvalida, NodoSensor, TipoVariable
 
 MAX_QUERY_LIMIT = 1000
 
@@ -81,11 +81,13 @@ def get_all_camas_twin_state(db: Session, readings_limit: int = 200) -> list[dic
 
 def get_twin_overview(db: Session) -> dict:
     try:
+        lecturas_validas = db.query(func.count(Lectura.lectura_id)).scalar() or 0
+        lecturas_invalidas = db.query(func.count(LecturaInvalida.lectura_invalida_id)).scalar() or 0
         return {
             "total_camas": db.query(func.count(CamaVermicompostaje.cama_id)).scalar() or 0,
             "total_nodos": db.query(func.count(NodoSensor.nodo_id)).scalar() or 0,
-            "lecturas_validas": db.query(func.count(Lectura.lectura_id)).filter(Lectura.es_valida.is_(True)).scalar() or 0,
-            "lecturas_invalidas": db.query(func.count(Lectura.lectura_id)).filter(Lectura.es_valida.is_(False)).scalar() or 0,
+            "lecturas_validas": lecturas_validas,
+            "lecturas_invalidas": lecturas_invalidas,
         }
     except SQLAlchemyError as exc:
         raise PersistenceError("error al consultar overview twin") from exc

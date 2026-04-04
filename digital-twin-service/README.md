@@ -13,6 +13,12 @@ Base URL por gateway: http://localhost/twins
 - GET /api/v1/twins/camas/{cama_id}?readings_limit=
 - GET /api/v1/twins/nodos/{nodo_id}?readings_limit=
 
+## Nota de overview
+
+- total_camas y total_nodos se calculan desde tablas maestras.
+- lecturas_validas se calcula desde lectura.
+- lecturas_invalidas se calcula desde lectura_invalida.
+
 ## Validaciones de entrada
 
 - readings_limit: 1..1000
@@ -47,3 +53,12 @@ curl "http://localhost/twins/api/v1/twins/camas/9999?readings_limit=200"
 # nodo no existe -> 404
 curl "http://localhost/twins/api/v1/twins/nodos/9999?readings_limit=200"
 ```
+
+## Pruebas locales
+
+```bash
+python -m pytest digital-twin-service/tests
+python -m compileall app
+```
+
+La suite incluye casos positivos y negativos para estados twin, limites de consulta y overview.
