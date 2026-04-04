@@ -35,8 +35,10 @@ Base URL por gateway: http://localhost/query
 
 ## Nota sobre lecturas invalidas
 
-- GET /api/v1/lecturas/invalidas devuelve solo invalidas persistidas en lectura.
-- Rechazos de ingestion con persistida=false (por ejemplo payload_incompleto, nodo_no_registrado, tipo_variable_no_soportado) no aparecen en esta consulta.
+- GET /api/v1/lecturas/invalidas consulta lectura_invalida.
+- Devuelve invalidas con trazabilidad aun cuando nodo_id o tipo_variable_id sean NULL.
+- El campo motivo_invalidacion corresponde a lectura_invalida.tipo_error.
+- lecturas historicas validas siguen saliendo de lectura.
 
 ## Curl de validacion
 
@@ -67,3 +69,12 @@ curl "http://localhost/query/api/v1/lecturas/historico/rango-tiempo?start=2026-0
 # nodo no existe -> 404
 curl "http://localhost/query/api/v1/estado/nodo/9999?minutes=15"
 ```
+
+## Pruebas locales
+
+```bash
+python -m pytest query-monitoring-service/tests
+python -m compileall app
+```
+
+La suite incluye casos positivos y negativos para historicos, lecturas invalidas, estado de nodos y resumen global.

@@ -1,11 +1,11 @@
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, literal
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.exceptions import NotFoundError, PersistenceError, ValidationError
-from app.models.query_model import CamaVermicompostaje, Lectura, NodoSensor, TipoVariable
+from app.models.query_model import CamaVermicompostaje, Lectura, LecturaInvalida, NodoSensor, TipoVariable
 
 MAX_QUERY_LIMIT = 1000
 MAX_MINUTES_WINDOW = 60 * 24 * 30
@@ -86,8 +86,8 @@ def _lectura_rows(query):
         Lectura.valor,
         Lectura.fecha_medicion,
         Lectura.fecha_recepcion,
-        Lectura.es_valida,
-        Lectura.motivo_invalidacion,
+        literal(True).label("es_valida"),
+        literal(None).label("motivo_invalidacion"),
     )
 
 
@@ -96,6 +96,31 @@ def _base_lectura_query(db: Session):
         db.query(Lectura)
         .join(NodoSensor, NodoSensor.nodo_id == Lectura.nodo_id)
         .join(TipoVariable, TipoVariable.tipo_variable_id == Lectura.tipo_variable_id)
+    )
+
+
+def _base_lectura_invalida_query(db: Session):
+    return (
+        db.query(LecturaInvalida)
+        .outerjoin(NodoSensor, NodoSensor.nodo_id == LecturaInvalida.nodo_id)
+        .outerjoin(TipoVariable, TipoVariable.tipo_variable_id == LecturaInvalida.tipo_variable_id)
+    )
+
+
+def _lectura_invalida_rows(query):
+    return query.with_entities(
+        LecturaInvalida.lectura_invalida_id.label("lectura_id"),
+        LecturaInvalida.nodo_id,
+        NodoSensor.cama_id,
+        NodoSensor.codigo_nodo,
+        LecturaInvalida.tipo_variable_id,
+        TipoVariable.nombre,
+        TipoVariable.unidad_medida,
+        LecturaInvalida.valor_recibido,
+        LecturaInvalida.fecha_medicion,
+        LecturaInvalida.fecha_recepcion,
+        literal(False).label("es_valida"),
+        LecturaInvalida.tipo_error.label("motivo_invalidacion"),
     )
 
 
@@ -150,8 +175,8 @@ def get_lecturas_by_rango(db: Session, start: datetime, end: datetime, limit: in
 def get_lecturas_invalidas(db: Session, limit: int = 300):
     _validate_limit(limit)
     try:
-        query = _base_lectura_query(db).filter(Lectura.es_valida.is_(False))
-        return _lectura_rows(query).order_by(desc(Lectura.fecha_recepcion)).limit(limit).all()
+        query = _base_lectura_invalida_query(db)
+        return _lectura_invalida_rows(query).order_by(desc(LecturaInvalida.fecha_recepcion)).limit(limit).all()
     except (ValidationError,):
         raise
     except SQLAlchemyError as exc:
@@ -178,7 +203,7 @@ def _is_connected(last_seen: datetime | None, minutes: int) -> bool:
     if not last_seen:
         return False
     if last_seen.tzinfo is None:
-        threshold = datetime.utcnow() - timedelta(minutes=minutes)
+        threshold = datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=minutes)
         return last_seen >= threshold
     threshold = datetime.now(UTC) - timedelta(minutes=minutes)
     return last_seen >= threshold
@@ -243,7 +268,7 @@ def get_monitoring_summary(db: Session, disconnect_minutes: int = 15) -> dict:
         total_camas = db.query(func.count(CamaVermicompostaje.cama_id)).scalar() or 0
         total_nodos = db.query(func.count(NodoSensor.nodo_id)).scalar() or 0
         nodos_desconectados = len(get_nodos_desconectados(db, disconnect_minutes))
-        lecturas_invalidas = db.query(func.count(Lectura.lectura_id)).filter(Lectura.es_valida.is_(False)).scalar() or 0
+        lecturas_invalidas = db.query(func.count(LecturaInvalida.lectura_invalida_id)).scalar() or 0
         return {
             "total_camas": total_camas,
             "total_nodos": total_nodos,

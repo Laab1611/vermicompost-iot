@@ -35,14 +35,14 @@ class TipoVariableResponse(BaseModel):
 
 class LecturaDetalle(BaseModel):
     lectura_id: int
-    nodo_id: int
-    cama_id: int
-    codigo_nodo: str
-    tipo_variable_id: int
-    tipo_variable: str
-    unidad_medida: str
-    valor: Decimal
-    fecha_medicion: datetime
+    nodo_id: Optional[int] = None
+    cama_id: Optional[int] = None
+    codigo_nodo: Optional[str] = None
+    tipo_variable_id: Optional[int] = None
+    tipo_variable: Optional[str] = None
+    unidad_medida: Optional[str] = None
+    valor: Decimal | str
+    fecha_medicion: datetime | str
     fecha_recepcion: datetime
     es_valida: bool
     motivo_invalidacion: Optional[str] = None
