@@ -3,7 +3,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from app.models.telemetry_model import CamaVermicompostaje, Lectura, NodoSensor, TipoVariable
+from app.models.telemetry_model import CamaVermicompostaje, Lectura, LecturaInvalida, NodoSensor, TipoVariable
 
 
 def create_cama(db: Session, cama: CamaVermicompostaje) -> CamaVermicompostaje:
@@ -100,6 +100,13 @@ def create_lectura(db: Session, lectura: Lectura) -> Lectura:
 	db.commit()
 	db.refresh(lectura)
 	return lectura
+
+
+def create_lectura_invalida(db: Session, lectura_invalida: LecturaInvalida) -> LecturaInvalida:
+	db.add(lectura_invalida)
+	db.commit()
+	db.refresh(lectura_invalida)
+	return lectura_invalida
 
 
 def list_lecturas(db: Session) -> list[Lectura]:

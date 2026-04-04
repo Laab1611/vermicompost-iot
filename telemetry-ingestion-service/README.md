@@ -43,14 +43,19 @@ Base URL por gateway: http://localhost/telemetry
   - nodo_no_registrado
   - tipo_variable_no_soportado
   - payload_incompleto
+  - valor_fuera_de_rango
+  - error_desconocido
 - Persistencia en ingestion:
-  - timestamp_invalido -> persistida=true (se guarda en lectura).
-  - nodo_no_registrado, tipo_variable_no_soportado y payload_incompleto -> persistida=false (no se guarda en lectura).
+  - Toda lectura invalida se guarda en lectura_invalida con datos crudos:
+    - valor_recibido como texto exacto.
+    - fecha_medicion como texto exacto.
+    - nodo_id y tipo_variable_id como NULL cuando no se pueden resolver.
 - Validacion de unidad para tipos conocidos en CRUD de tipo_variable:
   - Temperatura ambiental -> degC
   - Humedad relativa -> %
   - pH -> pH
-- Los umbrales de rango no invalidan automaticamente en backend; ese control se delega a Grafana.
+- valor_fuera_de_rango aplica cuando valor no puede parsearse como decimal (por ejemplo, texto).
+- Los umbrales y rangos operativos se gestionan en Grafana, no en backend.
 
 ## Errores HTTP esperados
 
@@ -96,7 +101,7 @@ curl -X POST http://localhost/telemetry/api/v1/ingestion \
 
 ### Casos invalidos de ingestion
 
-1) nodo no existe -> 200 con motivo nodo_no_registrado y persistida=false
+1) nodo no existe -> 200 con motivo nodo_no_registrado y persistida=true
 
 ```bash
 curl -X POST http://localhost/telemetry/api/v1/ingestion \
@@ -120,7 +125,7 @@ curl -X POST http://localhost/telemetry/api/v1/ingestion \
   -d '{"nodo_id":1,"tipo_variable_id":1,"valor":27.8,"fecha_medicion":"2026-03-20T15:00:00Z","fecha_recepcion":"2026-03-20T14:59:59Z"}'
 ```
 
-4) tipo_variable no existe -> 200 con motivo tipo_variable_no_soportado y persistida=false
+4) tipo_variable no existe -> 200 con motivo tipo_variable_no_soportado y persistida=true
 
 ```bash
 curl -X POST http://localhost/telemetry/api/v1/ingestion \
@@ -128,7 +133,7 @@ curl -X POST http://localhost/telemetry/api/v1/ingestion \
   -d '{"nodo_id":1,"tipo_variable_id":999999,"valor":27.8,"fecha_medicion":"2026-03-20T15:00:00Z"}'
 ```
 
-5) payload incompleto -> 200 con motivo payload_incompleto y persistida=false
+5) payload incompleto -> 200 con motivo payload_incompleto y persistida=true
 
 ```bash
 curl -X POST http://localhost/telemetry/api/v1/ingestion \
@@ -142,7 +147,17 @@ Verificacion de lecturas invalidas (desde query service):
 curl "http://localhost/query/api/v1/lecturas/invalidas?limit=50"
 ```
 
-Nota: este endpoint muestra invalidas persistidas en lectura.
+Nota: este endpoint muestra invalidas persistidas en lectura_invalida.
+
+6) valor no decimal -> 200 con motivo valor_fuera_de_rango y persistida=true
+
+```bash
+curl -X POST http://localhost/telemetry/api/v1/ingestion \
+  -H "Content-Type: application/json" \
+  -d '{"nodo_id":1,"tipo_variable_id":1,"valor":"texto-invalido","fecha_medicion":"2026-03-20T15:00:00Z"}'
+```
+
+Nota: este endpoint muestra invalidas persistidas en lectura_invalida.
 
 ### CRUD rapido
 
@@ -152,3 +167,12 @@ curl http://localhost/telemetry/api/v1/nodos
 curl http://localhost/telemetry/api/v1/tipos-variable
 curl http://localhost/telemetry/api/v1/lecturas
 ```
+
+## Pruebas locales
+
+```bash
+python -m pytest telemetry-ingestion-service/tests
+python -m compileall app
+```
+
+La suite incluye casos positivos y negativos para la logica de ingestion y persistencia de lecturas invalidas.

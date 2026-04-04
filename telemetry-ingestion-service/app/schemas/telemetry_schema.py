@@ -123,8 +123,6 @@ class LecturaResponse(BaseModel):
     valor: Decimal
     fecha_medicion: datetime
     fecha_recepcion: datetime
-    es_valida: bool
-    motivo_invalidacion: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

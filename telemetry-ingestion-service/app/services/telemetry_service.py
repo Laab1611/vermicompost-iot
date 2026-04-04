@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.exceptions import ConflictError, DependencyError, NotFoundError, PersistenceError, ValidationError
-from app.models.telemetry_model import CamaVermicompostaje, Lectura, NodoSensor, TipoVariable
+from app.models.telemetry_model import CamaVermicompostaje, Lectura, LecturaInvalida, NodoSensor, TipoVariable
 from app.repository import telemetry_repository
 from app.schemas.telemetry_schema import (
     CamaCreate,
@@ -26,16 +26,18 @@ ALLOWED_VARIABLE_UNITS = {
     "ph": "ph",
 }
 
-ALLOWED_INVALIDATION_REASONS = {
+INGESTION_ERROR_TYPES = {
     "timestamp_invalido",
     "nodo_no_registrado",
     "tipo_variable_no_soportado",
     "payload_incompleto",
+    "valor_fuera_de_rango",
+    "error_desconocido",
 }
 
 
 def _now_utc_naive() -> datetime:
-    return datetime.utcnow()
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 def _to_naive_utc(value: datetime) -> datetime:
@@ -67,6 +69,10 @@ def _has_timestamp_issue(fecha_medicion: datetime, fecha_recepcion: datetime) ->
     return fm > now or fr < fm or fr > now
 
 
+def _is_blank(value: Any) -> bool:
+    return isinstance(value, str) and not value.strip()
+
+
 def _normalize_unit(unit: str) -> str:
     normalized = unit.strip().lower().replace("°", "deg")
     return normalized
@@ -81,26 +87,13 @@ def _validate_variable_unit(nombre: str, unidad_medida: str) -> None:
             raise ValidationError(f"unidad_medida invalida para {nombre}")
 
 
-def _evaluate_reading_validity(tipo: TipoVariable, valor: Decimal) -> tuple[bool, Optional[str]]:
-    # Range interpretation belongs to Grafana alerting configuration.
-    # Backend persists any numeric value and does not invalidate by thresholds.
-    _ = tipo
-    _ = valor
-    return True, None
-
-
-def _coherent_validity(
-    tipo: TipoVariable,
-    valor: Decimal,
-) -> tuple[bool, Optional[str]]:
-    evaluated_valid, evaluated_reason = _evaluate_reading_validity(tipo, valor)
-    return evaluated_valid, evaluated_reason
-
-
-def _derive_ingestion_validity(tipo: TipoVariable, valor: Decimal, fecha_medicion: datetime, fecha_recepcion: datetime) -> tuple[bool, Optional[str]]:
-    if _has_timestamp_issue(fecha_medicion, fecha_recepcion):
-        return False, "timestamp_invalido"
-    return _evaluate_reading_validity(tipo, valor)
+def _parse_int(value: Any) -> Optional[int]:
+    if value is None or _is_blank(value):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _parse_datetime(value: Any) -> Optional[datetime]:
@@ -125,6 +118,67 @@ def _parse_decimal(value: Any) -> Optional[Decimal]:
         return Decimal(str(value))
     except Exception:
         return None
+
+
+def _as_raw_text(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return str(value)
+
+
+def _resolve_existing_nodo_id(db: Session, nodo_id: Optional[int]) -> Optional[int]:
+    if nodo_id is None:
+        return None
+    nodo = telemetry_repository.get_nodo(db, nodo_id)
+    return nodo.nodo_id if nodo else None
+
+
+def _resolve_existing_tipo_variable_id(db: Session, tipo_variable_id: Optional[int]) -> Optional[int]:
+    if tipo_variable_id is None:
+        return None
+    tipo = telemetry_repository.get_tipo_variable(db, tipo_variable_id)
+    return tipo.tipo_variable_id if tipo else None
+
+
+def _persist_invalid_reading(
+    db: Session,
+    *,
+    nodo_id: Optional[int],
+    tipo_variable_id: Optional[int],
+    valor_recibido: str,
+    fecha_medicion: str,
+    tipo_error: str,
+) -> LecturaInvalida:
+    if tipo_error not in INGESTION_ERROR_TYPES:
+        tipo_error = "error_desconocido"
+
+    lectura_invalida = LecturaInvalida(
+        nodo_id=nodo_id,
+        tipo_variable_id=tipo_variable_id,
+        valor_recibido=valor_recibido,
+        fecha_medicion=fecha_medicion,
+        fecha_recepcion=datetime.now(UTC),
+        tipo_error=tipo_error,
+    )
+    try:
+        return telemetry_repository.create_lectura_invalida(db, lectura_invalida)
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise PersistenceError("error al registrar lectura invalida") from exc
+
+
+def _invalid_ingestion_response(tipo_error: str) -> dict[str, Any]:
+    return {
+        "message": "Lectura invalida registrada",
+        "lectura_id": None,
+        "es_valida": False,
+        "motivo_invalidacion": tipo_error,
+        "persistida": True,
+    }
 
 
 def create_cama(db: Session, payload: CamaCreate) -> CamaVermicompostaje:
@@ -274,8 +328,7 @@ def delete_tipo_variable(db: Session, tipo_variable_id: int) -> None:
 
 def create_lectura(db: Session, payload: LecturaCreate) -> Lectura:
     nodo = get_nodo_or_fail(db, payload.nodo_id)
-    tipo = get_tipo_variable_or_fail(db, payload.tipo_variable_id)
-    final_valid, final_reason = _coherent_validity(tipo, payload.valor)
+    get_tipo_variable_or_fail(db, payload.tipo_variable_id)
     fecha_recepcion = payload.fecha_recepcion or datetime.now(UTC)
     _validate_reading_dates(payload.fecha_medicion, fecha_recepcion)
 
@@ -285,8 +338,6 @@ def create_lectura(db: Session, payload: LecturaCreate) -> Lectura:
         valor=payload.valor,
         fecha_medicion=payload.fecha_medicion,
         fecha_recepcion=fecha_recepcion,
-        es_valida=final_valid,
-        motivo_invalidacion=final_reason,
     )
     try:
         db.add(lectura)
@@ -301,70 +352,138 @@ def create_lectura(db: Session, payload: LecturaCreate) -> Lectura:
 
 def ingest_telemetry(db: Session, payload: IngestionCreate | dict[str, Any]) -> dict[str, Any]:
     data = payload if isinstance(payload, dict) else payload.model_dump()
+    raw_nodo_id = data.get("nodo_id")
+    raw_tipo_variable_id = data.get("tipo_variable_id")
+    raw_valor = data.get("valor")
+    raw_fecha_medicion = data.get("fecha_medicion")
+    raw_fecha_recepcion = data.get("fecha_recepcion")
 
-    nodo_id = data.get("nodo_id")
-    tipo_variable_id = data.get("tipo_variable_id")
-    valor = _parse_decimal(data.get("valor"))
-    fecha_medicion = _parse_datetime(data.get("fecha_medicion"))
-    fecha_recepcion = _parse_datetime(data.get("fecha_recepcion")) or datetime.now(UTC)
+    nodo_id = _parse_int(raw_nodo_id)
+    tipo_variable_id = _parse_int(raw_tipo_variable_id)
+    valor = _parse_decimal(raw_valor)
+    fecha_medicion = _parse_datetime(raw_fecha_medicion)
+    fecha_recepcion = _parse_datetime(raw_fecha_recepcion) if raw_fecha_recepcion is not None else None
 
-    # Accept request and classify as invalid when payload is incomplete/unparseable.
-    if nodo_id is None or tipo_variable_id is None or valor is None or fecha_medicion is None:
-        return {
-            "message": "Lectura recibida con inconsistencias",
-            "lectura_id": None,
-            "es_valida": False,
-            "motivo_invalidacion": "payload_incompleto",
-            "persistida": False,
-        }
+    valor_recibido = _as_raw_text(raw_valor)
+    fecha_medicion_cruda = _as_raw_text(raw_fecha_medicion)
 
-    nodo = telemetry_repository.get_nodo(db, int(nodo_id))
-    if not nodo:
-        return {
-            "message": "Lectura recibida con inconsistencias",
-            "lectura_id": None,
-            "es_valida": False,
-            "motivo_invalidacion": "nodo_no_registrado",
-            "persistida": False,
-        }
-
-    tipo = telemetry_repository.get_tipo_variable(db, int(tipo_variable_id))
-    if not tipo:
-        return {
-            "message": "Lectura recibida con inconsistencias",
-            "lectura_id": None,
-            "es_valida": False,
-            "motivo_invalidacion": "tipo_variable_no_soportado",
-            "persistida": False,
-        }
-
-    final_valid, final_reason = _derive_ingestion_validity(tipo, valor, fecha_medicion, fecha_recepcion)
-
-    lectura = Lectura(
-        nodo_id=int(nodo_id),
-        tipo_variable_id=int(tipo_variable_id),
-        valor=valor,
-        fecha_medicion=fecha_medicion,
-        fecha_recepcion=fecha_recepcion,
-        es_valida=final_valid,
-        motivo_invalidacion=final_reason,
-    )
     try:
+        invalid_non_decimal_value = raw_valor is not None and not _is_blank(raw_valor) and valor is None
+        if invalid_non_decimal_value:
+            _persist_invalid_reading(
+                db,
+                nodo_id=_resolve_existing_nodo_id(db, nodo_id),
+                tipo_variable_id=_resolve_existing_tipo_variable_id(db, tipo_variable_id),
+                valor_recibido=valor_recibido,
+                fecha_medicion=fecha_medicion_cruda,
+                tipo_error="valor_fuera_de_rango",
+            )
+            return _invalid_ingestion_response("valor_fuera_de_rango")
+
+        missing_required = (
+            raw_nodo_id is None
+            or raw_tipo_variable_id is None
+            or raw_valor is None
+            or raw_fecha_medicion is None
+            or _is_blank(raw_nodo_id)
+            or _is_blank(raw_tipo_variable_id)
+            or _is_blank(raw_valor)
+            or _is_blank(raw_fecha_medicion)
+            or nodo_id is None
+            or tipo_variable_id is None
+        )
+        if missing_required:
+            _persist_invalid_reading(
+                db,
+                nodo_id=_resolve_existing_nodo_id(db, nodo_id),
+                tipo_variable_id=_resolve_existing_tipo_variable_id(db, tipo_variable_id),
+                valor_recibido=valor_recibido,
+                fecha_medicion=fecha_medicion_cruda,
+                tipo_error="payload_incompleto",
+            )
+            return _invalid_ingestion_response("payload_incompleto")
+
+        nodo = telemetry_repository.get_nodo(db, nodo_id)
+        if not nodo:
+            _persist_invalid_reading(
+                db,
+                nodo_id=None,
+                tipo_variable_id=_resolve_existing_tipo_variable_id(db, tipo_variable_id),
+                valor_recibido=valor_recibido,
+                fecha_medicion=fecha_medicion_cruda,
+                tipo_error="nodo_no_registrado",
+            )
+            return _invalid_ingestion_response("nodo_no_registrado")
+
+        tipo = telemetry_repository.get_tipo_variable(db, tipo_variable_id)
+        if not tipo:
+            _persist_invalid_reading(
+                db,
+                nodo_id=nodo.nodo_id,
+                tipo_variable_id=None,
+                valor_recibido=valor_recibido,
+                fecha_medicion=fecha_medicion_cruda,
+                tipo_error="tipo_variable_no_soportado",
+            )
+            return _invalid_ingestion_response("tipo_variable_no_soportado")
+
+        if fecha_medicion is None or (raw_fecha_recepcion is not None and fecha_recepcion is None):
+            _persist_invalid_reading(
+                db,
+                nodo_id=nodo.nodo_id,
+                tipo_variable_id=tipo.tipo_variable_id,
+                valor_recibido=valor_recibido,
+                fecha_medicion=fecha_medicion_cruda,
+                tipo_error="timestamp_invalido",
+            )
+            return _invalid_ingestion_response("timestamp_invalido")
+
+        effective_fecha_recepcion = fecha_recepcion or datetime.now(UTC)
+        if _has_timestamp_issue(fecha_medicion, effective_fecha_recepcion):
+            _persist_invalid_reading(
+                db,
+                nodo_id=nodo.nodo_id,
+                tipo_variable_id=tipo.tipo_variable_id,
+                valor_recibido=valor_recibido,
+                fecha_medicion=fecha_medicion_cruda,
+                tipo_error="timestamp_invalido",
+            )
+            return _invalid_ingestion_response("timestamp_invalido")
+
+        lectura = Lectura(
+            nodo_id=nodo.nodo_id,
+            tipo_variable_id=tipo.tipo_variable_id,
+            valor=valor,
+            fecha_medicion=fecha_medicion,
+            fecha_recepcion=effective_fecha_recepcion,
+        )
         db.add(lectura)
-        nodo.ultima_lectura_recibida = fecha_recepcion
+        nodo.ultima_lectura_recibida = effective_fecha_recepcion
         db.commit()
         db.refresh(lectura)
+        return {
+            "message": "Lectura recibida",
+            "lectura_id": lectura.lectura_id,
+            "es_valida": True,
+            "motivo_invalidacion": None,
+            "persistida": True,
+        }
+    except PersistenceError:
+        raise
     except SQLAlchemyError as exc:
         db.rollback()
         raise PersistenceError("error al registrar ingesta") from exc
-
-    return {
-        "message": "Lectura recibida",
-        "lectura_id": lectura.lectura_id,
-        "es_valida": lectura.es_valida,
-        "motivo_invalidacion": lectura.motivo_invalidacion,
-        "persistida": True,
-    }
+    except Exception:
+        db.rollback()
+        _persist_invalid_reading(
+            db,
+            nodo_id=_resolve_existing_nodo_id(db, nodo_id),
+            tipo_variable_id=_resolve_existing_tipo_variable_id(db, tipo_variable_id),
+            valor_recibido=valor_recibido,
+            fecha_medicion=fecha_medicion_cruda,
+            tipo_error="error_desconocido",
+        )
+        return _invalid_ingestion_response("error_desconocido")
 
 
 def list_lecturas(db: Session) -> list[Lectura]:
@@ -381,8 +500,7 @@ def get_lectura_or_fail(db: Session, lectura_id: int) -> Lectura:
 def update_lectura(db: Session, lectura_id: int, payload: LecturaUpdate) -> Lectura:
     lectura = get_lectura_or_fail(db, lectura_id)
     nodo = get_nodo_or_fail(db, payload.nodo_id)
-    tipo = get_tipo_variable_or_fail(db, payload.tipo_variable_id)
-    final_valid, final_reason = _coherent_validity(tipo, payload.valor)
+    get_tipo_variable_or_fail(db, payload.tipo_variable_id)
     fecha_recepcion = payload.fecha_recepcion or lectura.fecha_recepcion
     _validate_reading_dates(payload.fecha_medicion, fecha_recepcion)
 
@@ -391,8 +509,6 @@ def update_lectura(db: Session, lectura_id: int, payload: LecturaUpdate) -> Lect
     lectura.valor = payload.valor
     lectura.fecha_medicion = payload.fecha_medicion
     lectura.fecha_recepcion = fecha_recepcion
-    lectura.es_valida = final_valid
-    lectura.motivo_invalidacion = final_reason
     nodo.ultima_lectura_recibida = fecha_recepcion
 
     try:
