@@ -30,7 +30,8 @@ curl http://localhost/twins/health
 - cama_vermicompostaje(cama_id, nombre, ubicacion, latitud, longitud, created_at)
 - nodo_sensor(nodo_id, cama_id, codigo_nodo, created_at, ultima_lectura_recibida)
 - tipo_variable(tipo_variable_id, nombre, unidad_medida)
-- lectura(lectura_id, nodo_id, tipo_variable_id, valor, fecha_medicion, fecha_recepcion, es_valida, motivo_invalidacion)
+- lectura(lectura_id, nodo_id, tipo_variable_id, valor, fecha_medicion, fecha_recepcion)
+- lectura_invalida(lectura_invalida_id, nodo_id, tipo_variable_id, valor_recibido, fecha_medicion, fecha_recepcion, tipo_error)
 
 ## Responsabilidad de cada servicio
 
@@ -59,9 +60,9 @@ curl http://localhost/twins/health
 2. Nginx enruta la solicitud al telemetry-ingestion-service.
 3. telemetry-ingestion-service valida reglas de dominio y clasifica invalidez automatica en ingestion.
 4. Si la lectura es aceptada, se actualiza ultima_lectura_recibida del nodo correspondiente.
-5. Las ingestas invalidas por timestamp se persisten en lectura con motivo_invalidacion.
-6. Las ingestas invalidas por payload_incompleto, nodo_no_registrado o tipo_variable_no_soportado se aceptan y reportan motivo, pero no se persisten en lectura por restricciones del DER.
-7. query-monitoring-service consulta PostgreSQL para historicos, estados, lecturas invalidas persistidas y nodos desconectados, expuestos por /query/.
+5. Toda lectura invalida se persiste en lectura_invalida con trazabilidad completa y datos crudos.
+6. La clasificacion de error en ingestion incluye: timestamp_invalido, nodo_no_registrado, tipo_variable_no_soportado, payload_incompleto, valor_fuera_de_rango y error_desconocido.
+7. query-monitoring-service consulta PostgreSQL para historicos, estados, lecturas invalidas (desde lectura_invalida) y nodos desconectados, expuestos por /query/.
 8. digital-twin-integration-service consulta PostgreSQL para construir vistas de gemelo digital por nodo, por cama y globales, expuestas por /twins/.
 9. Prometheus recolecta metricas de los servicios para observabilidad.
 10. Grafana consume esas metricas para dashboards y seguimiento operativo.
@@ -82,6 +83,17 @@ curl http://localhost/telemetry/health
 curl http://localhost/query/health
 curl http://localhost/twins/health
 ```
+
+## Pruebas recomendadas en local
+
+```bash
+python -m pytest telemetry-ingestion-service/tests
+python -m pytest query-monitoring-service/tests
+python -m pytest digital-twin-service/tests
+python -m compileall telemetry-ingestion-service query-monitoring-service digital-twin-service
+```
+
+Hay pruebas unitarias dedicadas para los tres servicios.
 
 ## Documentacion por servicio
 
