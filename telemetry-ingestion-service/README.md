@@ -30,6 +30,32 @@ Base URL por gateway: http://localhost/telemetry
 - PUT /api/v1/lecturas/{lectura_id}
 - DELETE /api/v1/lecturas/{lectura_id}
 
+## Modo broker para ingestion
+
+Variables de entorno:
+
+- INGESTION_MODE=sync|broker
+- BROKER_PROVIDER=redis|memory
+- BROKER_QUEUE_NAME=telemetry.ingestion
+- BROKER_CONSUMER_ENABLED=true|false
+- BROKER_PREFETCH_COUNT=100
+- BROKER_BATCH_SIZE=100
+- BROKER_FLUSH_SECONDS=1.0
+- REDIS_URL=redis://redis:6379/0
+- REDIS_CONSUMER_GROUP=telemetry-ingestion-group
+- REDIS_CONSUMER_NAME=telemetry-ingestion-consumer
+- REDIS_POLL_TIMEOUT_MS=1000
+<!-- - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/%2F -->
+<!-- - RABBITMQ_EXCHANGE= -->
+<!-- - RABBITMQ_ROUTING_KEY= -->
+
+Comportamiento:
+
+- En `sync`, `POST /api/v1/ingestion` mantiene comportamiento historico.
+- En `broker`, `POST /api/v1/ingestion` encola y responde inmediatamente con `persistida=false`.
+- En `broker` con Redis Streams, el consumidor valida cada payload y persiste lecturas validas en lotes.
+- Batch actual: tamaño 100 y flush por tiempo para evitar latencias altas en rafagas.
+
 ## Reglas de validacion relevantes
 
 - create_nodo asigna created_at en backend.

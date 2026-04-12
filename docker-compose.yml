@@ -32,8 +32,63 @@ services:
       context: ./telemetry-ingestion-service
     env_file:
       - .env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SLOW_REQUEST_WARN_MS: ${SLOW_REQUEST_WARN_MS:-5000}
+      INGESTION_MODE: ${INGESTION_MODE:-broker}
+      BROKER_PROVIDER: ${BROKER_PROVIDER:-redis}
+      BROKER_QUEUE_NAME: ${BROKER_QUEUE_NAME:-telemetry.ingestion}
+      BROKER_CONSUMER_ENABLED: ${BROKER_CONSUMER_ENABLED_API:-false}
+      BROKER_PREFETCH_COUNT: ${BROKER_PREFETCH_COUNT:-100}
+      BROKER_BATCH_SIZE: ${BROKER_BATCH_SIZE:-100}
+      BROKER_FLUSH_SECONDS: ${BROKER_FLUSH_SECONDS:-1.0}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      REDIS_CONSUMER_GROUP: ${REDIS_CONSUMER_GROUP:-telemetry-ingestion-group}
+      REDIS_CONSUMER_NAME: ${REDIS_CONSUMER_NAME_API:-telemetry-ingestion-api}
+      REDIS_POLL_TIMEOUT_MS: ${REDIS_POLL_TIMEOUT_MS:-1000}
+      # RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/%2F}
+      # RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-}
+      # RABBITMQ_ROUTING_KEY: ${RABBITMQ_ROUTING_KEY:-}
+    depends_on:
+      redis:
+        condition: service_healthy
     ports:
       - "8001:8000"
+    networks:
+      - vermicompost-net
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)\" || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  telemetry-ingestion-worker:
+    build:
+      context: ./telemetry-ingestion-service
+    env_file:
+      - .env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SLOW_REQUEST_WARN_MS: ${SLOW_REQUEST_WARN_MS:-5000}
+      INGESTION_MODE: ${INGESTION_MODE:-broker}
+      BROKER_PROVIDER: ${BROKER_PROVIDER:-redis}
+      BROKER_QUEUE_NAME: ${BROKER_QUEUE_NAME:-telemetry.ingestion}
+      BROKER_CONSUMER_ENABLED: ${BROKER_CONSUMER_ENABLED_WORKER:-true}
+      BROKER_PREFETCH_COUNT: ${BROKER_PREFETCH_COUNT:-100}
+      BROKER_BATCH_SIZE: ${BROKER_BATCH_SIZE:-100}
+      BROKER_FLUSH_SECONDS: ${BROKER_FLUSH_SECONDS:-1.0}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      REDIS_CONSUMER_GROUP: ${REDIS_CONSUMER_GROUP:-telemetry-ingestion-group}
+      REDIS_CONSUMER_NAME: ${REDIS_CONSUMER_NAME_WORKER:-telemetry-ingestion-worker-{hostname}-{pid}}
+      REDIS_POLL_TIMEOUT_MS: ${REDIS_POLL_TIMEOUT_MS:-1000}
+    command: ["python", "-m", "app.worker"]
+    depends_on:
+      redis:
+        condition: service_healthy
     networks:
       - vermicompost-net
 
@@ -42,20 +97,76 @@ services:
       context: ./query-monitoring-service
     env_file:
       - .env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SLOW_REQUEST_WARN_MS: ${SLOW_REQUEST_WARN_MS:-5000}
     ports:
       - "8002:8000"
     networks:
       - vermicompost-net
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)\" || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   digital-twin-integration-service:
     build:
       context: ./digital-twin-service
     env_file:
       - .env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SLOW_REQUEST_WARN_MS: ${SLOW_REQUEST_WARN_MS:-5000}
     ports:
       - "8003:8000"
     networks:
       - vermicompost-net
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)\" || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - vermicompost-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ service temporarily disabled.
+  # rabbitmq:
+  #   image: rabbitmq:3.13-management-alpine
+  #   profiles:
+  #     - broker-rabbitmq
+  #   environment:
+  #     RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+  #     RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+  #   ports:
+  #     - "5672:5672"
+  #     - "15672:15672"
+  #   networks:
+  #     - vermicompost-net
+  #   healthcheck:
+  #     test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+  #     interval: 15s
+  #     timeout: 5s
+  #     retries: 5
 
   prometheus:
     image: prom/prometheus:latest

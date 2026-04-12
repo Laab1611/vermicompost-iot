@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -124,3 +125,18 @@ def delete_lectura(db: Session, lectura: Lectura) -> None:
 
 def update_ultima_lectura_nodo(db: Session, nodo: NodoSensor, when: datetime) -> None:
 	nodo.ultima_lectura_recibida = when
+
+
+def bulk_create_lecturas(db: Session, lecturas_rows: list[dict[str, Any]]) -> int:
+	if not lecturas_rows:
+		return 0
+	db.bulk_insert_mappings(Lectura, lecturas_rows)
+	return len(lecturas_rows)
+
+
+def bulk_update_nodo_last_seen(db: Session, last_seen_by_nodo: dict[int, datetime]) -> None:
+	for nodo_id, when in last_seen_by_nodo.items():
+		db.query(NodoSensor).filter(NodoSensor.nodo_id == nodo_id).update(
+			{NodoSensor.ultima_lectura_recibida: when},
+			synchronize_session=False,
+		)

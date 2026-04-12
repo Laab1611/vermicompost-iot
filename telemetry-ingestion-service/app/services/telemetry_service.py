@@ -1,10 +1,13 @@
 from datetime import UTC, datetime
 from decimal import Decimal
+import logging
 from typing import Any, Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.broker.runtime import get_runtime
+from app.config import settings
 from app.exceptions import ConflictError, DependencyError, NotFoundError, PersistenceError, ValidationError
 from app.models.telemetry_model import CamaVermicompostaje, Lectura, LecturaInvalida, NodoSensor, TipoVariable
 from app.repository import telemetry_repository
@@ -20,11 +23,7 @@ from app.schemas.telemetry_schema import (
     TipoVariableUpdate,
 )
 
-ALLOWED_VARIABLE_UNITS = {
-    "temperatura ambiental": "degc",
-    "humedad relativa": "%",
-    "ph": "ph",
-}
+logger = logging.getLogger(__name__)
 
 INGESTION_ERROR_TYPES = {
     "timestamp_invalido",
@@ -71,20 +70,6 @@ def _has_timestamp_issue(fecha_medicion: datetime, fecha_recepcion: datetime) ->
 
 def _is_blank(value: Any) -> bool:
     return isinstance(value, str) and not value.strip()
-
-
-def _normalize_unit(unit: str) -> str:
-    normalized = unit.strip().lower().replace("°", "deg")
-    return normalized
-
-
-def _validate_variable_unit(nombre: str, unidad_medida: str) -> None:
-    normalized_name = nombre.strip().lower()
-    normalized_unit = _normalize_unit(unidad_medida)
-    if normalized_name in ALLOWED_VARIABLE_UNITS:
-        expected = ALLOWED_VARIABLE_UNITS[normalized_name]
-        if normalized_unit != expected:
-            raise ValidationError(f"unidad_medida invalida para {nombre}")
 
 
 def _parse_int(value: Any) -> Optional[int]:
@@ -275,7 +260,6 @@ def delete_nodo(db: Session, nodo_id: int) -> None:
 
 
 def create_tipo_variable(db: Session, payload: TipoVariableCreate) -> TipoVariable:
-    _validate_variable_unit(payload.nombre, payload.unidad_medida)
     if telemetry_repository.get_tipo_variable_by_nombre(db, payload.nombre):
         raise ConflictError("tipo_variable ya existe")
     tipo = TipoVariable(**payload.model_dump())
@@ -298,7 +282,6 @@ def get_tipo_variable_or_fail(db: Session, tipo_variable_id: int) -> TipoVariabl
 
 
 def update_tipo_variable(db: Session, tipo_variable_id: int, payload: TipoVariableUpdate) -> TipoVariable:
-    _validate_variable_unit(payload.nombre, payload.unidad_medida)
     tipo = get_tipo_variable_or_fail(db, tipo_variable_id)
     existing = telemetry_repository.get_tipo_variable_by_nombre(db, payload.nombre)
     if existing and existing.tipo_variable_id != tipo_variable_id:
@@ -350,8 +333,18 @@ def create_lectura(db: Session, payload: LecturaCreate) -> Lectura:
     return lectura
 
 
-def ingest_telemetry(db: Session, payload: IngestionCreate | dict[str, Any]) -> dict[str, Any]:
+def ingest_telemetry_request(db: Session, payload: IngestionCreate | dict[str, Any]) -> dict[str, Any]:
     data = payload if isinstance(payload, dict) else payload.model_dump()
+    runtime = get_runtime()
+
+    if settings.ingestion_mode == "broker" and runtime is not None and runtime.enabled:
+        logger.debug("Routing telemetry ingestion through broker")
+        return runtime.enqueue(data)
+
+    return ingest_telemetry(db, data)
+
+
+def _evaluate_ingestion_payload(db: Session, data: dict[str, Any]) -> dict[str, Any]:
     raw_nodo_id = data.get("nodo_id")
     raw_tipo_variable_id = data.get("tipo_variable_id")
     raw_valor = data.get("valor")
@@ -378,7 +371,12 @@ def ingest_telemetry(db: Session, payload: IngestionCreate | dict[str, Any]) -> 
                 fecha_medicion=fecha_medicion_cruda,
                 tipo_error="valor_fuera_de_rango",
             )
-            return _invalid_ingestion_response("valor_fuera_de_rango")
+            logger.info(
+                "Ingestion validation failed: motivo=valor_fuera_de_rango nodo_id=%s tipo_variable_id=%s",
+                nodo_id,
+                tipo_variable_id,
+            )
+            return {"status": "invalid", "response": _invalid_ingestion_response("valor_fuera_de_rango")}
 
         missing_required = (
             raw_nodo_id is None
@@ -401,7 +399,12 @@ def ingest_telemetry(db: Session, payload: IngestionCreate | dict[str, Any]) -> 
                 fecha_medicion=fecha_medicion_cruda,
                 tipo_error="payload_incompleto",
             )
-            return _invalid_ingestion_response("payload_incompleto")
+            logger.info(
+                "Ingestion validation failed: motivo=payload_incompleto nodo_id=%s tipo_variable_id=%s",
+                nodo_id,
+                tipo_variable_id,
+            )
+            return {"status": "invalid", "response": _invalid_ingestion_response("payload_incompleto")}
 
         nodo = telemetry_repository.get_nodo(db, nodo_id)
         if not nodo:
@@ -413,7 +416,12 @@ def ingest_telemetry(db: Session, payload: IngestionCreate | dict[str, Any]) -> 
                 fecha_medicion=fecha_medicion_cruda,
                 tipo_error="nodo_no_registrado",
             )
-            return _invalid_ingestion_response("nodo_no_registrado")
+            logger.info(
+                "Ingestion validation failed: motivo=nodo_no_registrado nodo_id=%s tipo_variable_id=%s",
+                nodo_id,
+                tipo_variable_id,
+            )
+            return {"status": "invalid", "response": _invalid_ingestion_response("nodo_no_registrado")}
 
         tipo = telemetry_repository.get_tipo_variable(db, tipo_variable_id)
         if not tipo:
@@ -425,7 +433,12 @@ def ingest_telemetry(db: Session, payload: IngestionCreate | dict[str, Any]) -> 
                 fecha_medicion=fecha_medicion_cruda,
                 tipo_error="tipo_variable_no_soportado",
             )
-            return _invalid_ingestion_response("tipo_variable_no_soportado")
+            logger.info(
+                "Ingestion validation failed: motivo=tipo_variable_no_soportado nodo_id=%s tipo_variable_id=%s",
+                nodo.nodo_id,
+                tipo_variable_id,
+            )
+            return {"status": "invalid", "response": _invalid_ingestion_response("tipo_variable_no_soportado")}
 
         if fecha_medicion is None or (raw_fecha_recepcion is not None and fecha_recepcion is None):
             _persist_invalid_reading(
@@ -436,7 +449,12 @@ def ingest_telemetry(db: Session, payload: IngestionCreate | dict[str, Any]) -> 
                 fecha_medicion=fecha_medicion_cruda,
                 tipo_error="timestamp_invalido",
             )
-            return _invalid_ingestion_response("timestamp_invalido")
+            logger.info(
+                "Ingestion validation failed: motivo=timestamp_invalido nodo_id=%s tipo_variable_id=%s",
+                nodo.nodo_id,
+                tipo.tipo_variable_id,
+            )
+            return {"status": "invalid", "response": _invalid_ingestion_response("timestamp_invalido")}
 
         effective_fecha_recepcion = fecha_recepcion or datetime.now(UTC)
         if _has_timestamp_issue(fecha_medicion, effective_fecha_recepcion):
@@ -448,25 +466,31 @@ def ingest_telemetry(db: Session, payload: IngestionCreate | dict[str, Any]) -> 
                 fecha_medicion=fecha_medicion_cruda,
                 tipo_error="timestamp_invalido",
             )
-            return _invalid_ingestion_response("timestamp_invalido")
+            logger.info(
+                "Ingestion validation failed: motivo=timestamp_invalido nodo_id=%s tipo_variable_id=%s",
+                nodo.nodo_id,
+                tipo.tipo_variable_id,
+            )
+            return {"status": "invalid", "response": _invalid_ingestion_response("timestamp_invalido")}
 
-        lectura = Lectura(
-            nodo_id=nodo.nodo_id,
-            tipo_variable_id=tipo.tipo_variable_id,
-            valor=valor,
-            fecha_medicion=fecha_medicion,
-            fecha_recepcion=effective_fecha_recepcion,
+        logger.debug(
+            "Ingestion validation passed: nodo_id=%s tipo_variable_id=%s",
+            nodo.nodo_id,
+            tipo.tipo_variable_id,
         )
-        db.add(lectura)
-        nodo.ultima_lectura_recibida = effective_fecha_recepcion
-        db.commit()
-        db.refresh(lectura)
+
         return {
-            "message": "Lectura recibida",
-            "lectura_id": lectura.lectura_id,
-            "es_valida": True,
-            "motivo_invalidacion": None,
-            "persistida": True,
+            "status": "valid",
+            "lectura_data": {
+                "nodo_id": nodo.nodo_id,
+                "tipo_variable_id": tipo.tipo_variable_id,
+                "valor": valor,
+                "fecha_medicion": fecha_medicion,
+                "fecha_recepcion": effective_fecha_recepcion,
+            },
+            "nodo": nodo,
+            "nodo_id": nodo.nodo_id,
+            "fecha_recepcion": effective_fecha_recepcion,
         }
     except PersistenceError:
         raise
@@ -483,7 +507,53 @@ def ingest_telemetry(db: Session, payload: IngestionCreate | dict[str, Any]) -> 
             fecha_medicion=fecha_medicion_cruda,
             tipo_error="error_desconocido",
         )
-        return _invalid_ingestion_response("error_desconocido")
+        logger.exception(
+            "Ingestion validation failed: motivo=error_desconocido nodo_id=%s tipo_variable_id=%s",
+            nodo_id,
+            tipo_variable_id,
+        )
+        return {"status": "invalid", "response": _invalid_ingestion_response("error_desconocido")}
+
+
+def prepare_ingestion_for_batch(db: Session, payload: IngestionCreate | dict[str, Any]) -> dict[str, Any]:
+    data = payload if isinstance(payload, dict) else payload.model_dump()
+    evaluation = _evaluate_ingestion_payload(db, data)
+    if evaluation["status"] != "valid":
+        logger.debug("Ingestion batch preparation dropped invalid payload")
+        return {"status": "invalid"}
+
+    return {
+        "status": "valid",
+        "lectura_data": evaluation["lectura_data"],
+        "nodo_id": evaluation["nodo_id"],
+        "fecha_recepcion": evaluation["fecha_recepcion"],
+    }
+
+
+def ingest_telemetry(db: Session, payload: IngestionCreate | dict[str, Any]) -> dict[str, Any]:
+    data = payload if isinstance(payload, dict) else payload.model_dump()
+    evaluation = _evaluate_ingestion_payload(db, data)
+    if evaluation["status"] != "valid":
+        logger.debug("Sync ingestion returning invalid response")
+        return evaluation["response"]
+
+    lectura = Lectura(**evaluation["lectura_data"])
+    try:
+        db.add(lectura)
+        evaluation["nodo"].ultima_lectura_recibida = evaluation["fecha_recepcion"]
+        db.commit()
+        db.refresh(lectura)
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise PersistenceError("error al registrar ingesta") from exc
+
+    return {
+        "message": "Lectura recibida",
+        "lectura_id": lectura.lectura_id,
+        "es_valida": True,
+        "motivo_invalidacion": None,
+        "persistida": True,
+    }
 
 
 def list_lecturas(db: Session) -> list[Lectura]:

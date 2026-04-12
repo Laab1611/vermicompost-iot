@@ -95,6 +95,28 @@ python -m compileall telemetry-ingestion-service query-monitoring-service digita
 
 Hay pruebas unitarias dedicadas para los tres servicios.
 
+## Escalabilidad con broker
+
+El servicio de ingestion soporta dos modos configurables por entorno:
+
+- `INGESTION_MODE=sync`: modo historico (request procesa y persiste en la misma llamada).
+- `INGESTION_MODE=broker`: modo desacoplado (request encola mensaje y consumidor persiste asincrono).
+
+Proveedor de broker configurable:
+
+- `BROKER_PROVIDER=redis` como opcion recomendada para entorno limitado.
+- `BROKER_PROVIDER=memory` para pruebas locales sin infraestructura externa.
+<!-- - `BROKER_PROVIDER=rabbitmq` para integracion con RabbitMQ. -->
+
+Controles de batch en modo broker:
+
+- `BROKER_BATCH_SIZE=100`
+- `BROKER_FLUSH_SECONDS=1.0`
+
+Referencia tecnica completa:
+
+- `docs/broker-escalabilidad-analisis.md`
+
 ## Documentacion por servicio
 
 - telemetry-ingestion-service/README.md

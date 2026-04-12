@@ -31,7 +31,7 @@ def health():
 @router.post("/api/v1/ingestion", response_model=IngestionResponse)
 def ingest_telemetry(payload: dict, db: Session = Depends(get_db)):
     try:
-        return IngestionResponse(**telemetry_service.ingest_telemetry(db, payload))
+        return IngestionResponse(**telemetry_service.ingest_telemetry_request(db, payload))
     except PersistenceError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
