@@ -1,0 +1,116 @@
+groups:
+  - name: disponibilidad-servicios
+    rules:
+      - alert: ServicioCaido
+        expr: up{job=~"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Servicio {{ $labels.job }} no disponible"
+          description: "Prometheus no puede recolectar métricas del servicio {{ $labels.job }} durante al menos 2 minutos."
+
+      - alert: ScrapeIntermitente
+        expr: avg_over_time(up{job=~"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana"}[10m]) < 0.8
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Inestabilidad de scrape en {{ $labels.job }}"
+          description: "La disponibilidad promedio de scrape cayó por debajo de 80% en 10 minutos para {{ $labels.job }}."
+
+  - name: rendimiento-api
+    rules:
+      - alert: IngestionApiLatenciaP95Alta
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="telemetry-ingestion-service"}[5m])) by (le)) > 5
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Latencia p95 alta en API de ingesta"
+          description: "La latencia p95 superó 5 s por al menos 10 minutos en telemetry-ingestion-service."
+
+      - alert: QueryApiLatenciaP95Alta
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="query-monitoring-service"}[5m])) by (le)) > 5
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Latencia p95 alta en API de consulta"
+          description: "La latencia p95 superó 5 s por al menos 10 minutos en query-monitoring-service."
+
+      - alert: IngestionApiErrorRateAlta
+        expr: (sum(rate(http_requests_total{job="telemetry-ingestion-service",status=~"5.."}[5m])) / clamp_min(sum(rate(http_requests_total{job="telemetry-ingestion-service"}[5m])), 0.001)) > 0.01
+        for: 10m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Error rate 5xx alto en API de ingesta"
+          description: "La tasa de respuestas 5xx es mayor a 1% en telemetry-ingestion-service durante al menos 10 minutos."
+
+      - alert: QueryApiErrorRateAlta
+        expr: (sum(rate(http_requests_total{job="query-monitoring-service",status=~"5.."}[5m])) / clamp_min(sum(rate(http_requests_total{job="query-monitoring-service"}[5m])), 0.001)) > 0.01
+        for: 10m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Error rate 5xx alto en API de consulta"
+          description: "La tasa de respuestas 5xx es mayor a 1% en query-monitoring-service durante al menos 10 minutos."
+
+  - name: ingestion-broker
+    rules:
+      - alert: IngestionBrokerProcesamientoConErrores
+        expr: increase(ingestion_broker_processed_total{status="error"}[10m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Errores de procesamiento en broker de ingesta"
+          description: "Se detectaron mensajes con error en telemetry-ingestion-service durante los últimos 10 minutos."
+
+      - alert: IngestionBrokerLagAlto
+        expr: max_over_time(ingestion_redis_consumer_lag[10m]) > 500
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Lag alto del consumidor Redis en ingesta"
+          description: "Lag de consumidor por encima de 500 mensajes durante al menos 10 minutos. Umbral asumido temporalmente."
+
+      - alert: IngestionBrokerPendientesAltos
+        expr: max_over_time(ingestion_redis_pending_messages[10m]) > 250
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Mensajes pendientes altos en Redis Streams"
+          description: "Mensajes pendientes por encima de 250 durante al menos 10 minutos. Umbral asumido temporalmente."
+
+      - alert: IngestionBrokerBufferEstancado
+        expr: avg_over_time(ingestion_batch_buffer_size[10m]) > 0 and increase(ingestion_broker_processed_total{status="ok"}[10m]) == 0
+        for: 10m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Buffer de ingesta con estancamiento"
+          description: "Hay datos en buffer pero no se procesaron mensajes exitosos en 10 minutos."
+
+      - alert: IngestionBrokerLatenciaP95Alta
+        expr: histogram_quantile(0.95, sum(rate(ingestion_broker_process_seconds_bucket[10m])) by (le)) > 2
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Latencia p95 alta en procesamiento del broker"
+          description: "La latencia p95 de procesamiento de mensajes superó 2 s durante al menos 10 minutos. Umbral asumido temporalmente."

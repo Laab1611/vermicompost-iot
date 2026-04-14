@@ -1,25 +1,25 @@
 {
 	"id": null,
 	"uid": "vermicompost-iot-full",
-	"title": "Vermicompost IoT - Monitoreo Completo",
+	"title": "Vermicompost IoT - Observabilidad Backend",
 	"timezone": "browser",
 	"schemaVersion": 30,
-	"version": 1,
+	"version": 2,
 	"refresh": "30s",
 	"panels": [
 		{
 			"type": "row",
-			"title": "Estado de Servicios",
+			"title": "Estado de servicios",
 			"gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
 			"collapsed": false
 		},
 		{
 			"type": "stat",
-			"title": "Servicios UP",
+			"title": "Servicios disponibles",
 			"datasource": "Prometheus",
 			"targets": [
 				{
-					"expr": "count_over_time(up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana|node-exporter|postgres-exporter\"}[5m])",
+					"expr": "sum(up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"})",
 					"legendFormat": "Servicios UP",
 					"refId": "A"
 				}
@@ -27,61 +27,93 @@
 			"fieldConfig": {
 				"defaults": { "unit": "none", "decimals": 0 }
 			},
-			"gridPos": { "x": 0, "y": 1, "w": 6, "h": 5 }
+			"gridPos": { "x": 0, "y": 1, "w": 8, "h": 5 }
 		},
 		{
 			"type": "stat",
-			"title": "Health API Grafana",
+			"title": "Disponibilidad media de scrape (%)",
 			"datasource": "Prometheus",
 			"targets": [
 				{
-					"expr": "up{job=\"grafana\"}",
-					"legendFormat": "Grafana",
+					"expr": "100 * avg(avg_over_time(up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"}[5m]))",
+					"legendFormat": "Disponibilidad media",
 					"refId": "A"
 				}
 			],
 			"fieldConfig": {
 				"defaults": {
-					"unit": "none",
-					"decimals": 0,
+					"unit": "percent",
+					"decimals": 1,
 					"thresholds": {
 						"mode": "absolute",
 						"steps": [
 							{ "value": 0, "color": "red" },
-							{ "value": 1, "color": "green" }
+							{ "value": 90, "color": "orange" },
+							{ "value": 99, "color": "green" }
 						]
 					}
 				}
 			},
-			"gridPos": { "x": 6, "y": 1, "w": 6, "h": 5 }
+			"gridPos": { "x": 8, "y": 1, "w": 8, "h": 5 }
+		},
+		{
+			"type": "timeseries",
+			"title": "Disponibilidad por servicio (promedio 5 min)",
+			"datasource": "Prometheus",
+			"targets": [
+				{
+					"expr": "avg_over_time(up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"}[5m])",
+					"legendFormat": "{{job}}",
+					"refId": "A"
+				}
+			],
+			"fieldConfig": {
+				"defaults": {
+					"unit": "percentunit",
+					"decimals": 2,
+					"min": 0,
+					"max": 1
+				}
+			},
+			"gridPos": { "x": 16, "y": 1, "w": 8, "h": 5 }
 		},
 		{
 			"type": "row",
-			"title": "Métricas IoT",
+			"title": "Rendimiento API",
 			"gridPos": { "x": 0, "y": 6, "w": 24, "h": 1 },
 			"collapsed": false
 		},
 		{
 			"type": "timeseries",
-			"title": "Temperatura HW (°C)",
+			"title": "Latencia p95 API (ms)",
 			"datasource": "Prometheus",
 			"targets": [
 				{
-					"expr": "avg_over_time(node_hwmon_temp_celsius[5m])",
+					"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"telemetry-ingestion-service\",handler!~\"/health|/metrics\"}[5m])) by (le)) * 1000",
 					"refId": "A",
-					"legendFormat": "Temperatura (HW)"
+					"legendFormat": "Ingesta"
+				},
+				{
+					"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"query-monitoring-service\",handler!~\"/health|/metrics\"}[5m])) by (le)) * 1000",
+					"refId": "B",
+					"legendFormat": "Consulta"
+				},
+				{
+					"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"digital-twin-integration-service\",handler!~\"/health|/metrics\"}[5m])) by (le)) * 1000",
+					"refId": "C",
+					"legendFormat": "Gemelo digital"
 				}
 			],
 			"fieldConfig": {
 				"defaults": {
-					"unit": "celsius",
+					"unit": "ms",
 					"decimals": 1,
 					"thresholds": {
 						"mode": "absolute",
 						"steps": [
 							{ "color": "green", "value": 0 },
-							{ "color": "orange", "value": 20 },
-							{ "color": "red", "value": 35 }
+							{ "color": "orange", "value": 3000 },
+							{ "color": "red", "value": 5000 }
 						]
 					}
 				}
@@ -90,27 +122,35 @@
 		},
 		{
 			"type": "timeseries",
-			"title": "Temperatura Zona (°C)",
+			"title": "Error rate 5xx API (%)",
 			"datasource": "Prometheus",
 			"targets": [
 				{
-					"expr": "avg_over_time(node_thermal_zone_temp[5m]) / 1000",
+					"expr": "100 * (sum(rate(http_requests_total{job=\"telemetry-ingestion-service\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_requests_total{job=\"telemetry-ingestion-service\"}[5m])), 0.001))",
 					"refId": "A",
-					"legendFormat": "Temperatura zona"
+					"legendFormat": "Ingesta"
+				},
+				{
+					"expr": "100 * (sum(rate(http_requests_total{job=\"query-monitoring-service\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_requests_total{job=\"query-monitoring-service\"}[5m])), 0.001))",
+					"refId": "B",
+					"legendFormat": "Consulta"
+				},
+				{
+					"expr": "100 * (sum(rate(http_requests_total{job=\"digital-twin-integration-service\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_requests_total{job=\"digital-twin-integration-service\"}[5m])), 0.001))",
+					"refId": "C",
+					"legendFormat": "Gemelo digital"
 				}
 			],
 			"fieldConfig": {
 				"defaults": {
 					"unit": "percent",
-					"decimals": 1,
+					"decimals": 2,
 					"thresholds": {
 						"mode": "absolute",
 						"steps": [
-							{ "color": "red", "value": 0 },
-							{ "color": "orange", "value": 30 },
-							{ "color": "green", "value": 50 },
-							{ "color": "orange", "value": 80 },
-							{ "color": "red", "value": 100 }
+							{ "color": "green", "value": 0 },
+							{ "color": "orange", "value": 0.5 },
+							{ "color": "red", "value": 1 }
 						]
 					}
 				}
@@ -119,75 +159,67 @@
 		},
 		{
 			"type": "timeseries",
-			"title": "Uso de disco raíz (%)",
+			"title": "Throughput API (req/s)",
 			"datasource": "Prometheus",
 			"targets": [
 				{
-					"expr": "100 * (node_filesystem_size_bytes{mountpoint='/',fstype!~'tmpfs|overlay'} - node_filesystem_free_bytes{mountpoint='/',fstype!~'tmpfs|overlay'}) / node_filesystem_size_bytes{mountpoint='/',fstype!~'tmpfs|overlay'}",
+					"expr": "sum(rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\"}[5m])) by (job)",
 					"refId": "A",
-					"legendFormat": "Uso disco /"
+					"legendFormat": "{{job}}"
 				}
 			],
 			"fieldConfig": {
 				"defaults": {
-					"unit": "short",
-					"decimals": 2,
-					"thresholds": {
-						"mode": "absolute",
-						"steps": [
-							{ "color": "red", "value": 0 },
-							{ "color": "orange", "value": 4 },
-							{ "color": "green", "value": 6 },
-							{ "color": "orange", "value": 8 },
-							{ "color": "red", "value": 9 }
-						]
-					}
+					"unit": "reqps",
+					"decimals": 2
 				}
 			},
 			"gridPos": { "x": 0, "y": 15, "w": 24, "h": 8 }
 		},
 		{
 			"type": "row",
-			"title": "Métricas de App",
+			"title": "Broker e ingesta",
 			"gridPos": { "x": 0, "y": 23, "w": 24, "h": 1 },
 			"collapsed": false
 		},
 		{
 			"type": "timeseries",
-			"title": "Latencia API Ingesta 95p (ms)",
+			"title": "Mensajes encolados y procesados (msg/s)",
 			"datasource": "Prometheus",
 			"targets": [
 				{
-					"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{instance='telemetry-ingestion-service:8000'}[5m])) by (le)) * 1000",
+					"expr": "sum(rate(ingestion_broker_enqueue_total[5m]))",
 					"refId": "A",
-					"legendFormat": "Ingesta API p95"
+					"legendFormat": "Encolados"
+				},
+				{
+					"expr": "sum(rate(ingestion_broker_processed_total{status=\"ok\"}[5m]))",
+					"refId": "B",
+					"legendFormat": "Procesados OK"
+				},
+				{
+					"expr": "sum(rate(ingestion_broker_processed_total{status=\"error\"}[5m]))",
+					"refId": "C",
+					"legendFormat": "Procesados error"
 				}
 			],
 			"fieldConfig": {
 				"defaults": {
-					"unit": "ms",
-					"decimals": 1,
-					"thresholds": {
-						"mode": "absolute",
-						"steps": [
-							{ "color": "green", "value": 0 },
-							{ "color": "orange", "value": 200 },
-							{ "color": "red", "value": 500 }
-						]
-					}
+					"unit": "ops",
+					"decimals": 2
 				}
 			},
 			"gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 }
 		},
 		{
 			"type": "timeseries",
-			"title": "Latencia API Query 95p (ms)",
+			"title": "Latencia p95 de procesamiento broker (ms)",
 			"datasource": "Prometheus",
 			"targets": [
 				{
-					"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{instance='query-monitoring-service:8000'}[5m])) by (le)) * 1000",
+					"expr": "histogram_quantile(0.95, sum(rate(ingestion_broker_process_seconds_bucket[5m])) by (le)) * 1000",
 					"refId": "A",
-					"legendFormat": "Query API p95"
+					"legendFormat": "p95 broker"
 				}
 			],
 			"fieldConfig": {
@@ -198,8 +230,8 @@
 						"mode": "absolute",
 						"steps": [
 							{ "color": "green", "value": 0 },
-							{ "color": "orange", "value": 200 },
-							{ "color": "red", "value": 500 }
+							{ "color": "orange", "value": 1000 },
+							{ "color": "red", "value": 2000 }
 						]
 					}
 				}
@@ -207,74 +239,48 @@
 			"gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 }
 		},
 		{
-			"type": "row",
-			"title": "Métricas Infraestructura",
-			"gridPos": { "x": 0, "y": 32, "w": 24, "h": 1 },
-			"collapsed": false
-		},
-		{
 			"type": "timeseries",
-			"title": "CPU Node Exporter (%)",
+			"title": "Estado de Redis Streams y buffer (mensajes)",
 			"datasource": "Prometheus",
 			"targets": [
 				{
-					"expr": "100 - (avg by (instance)(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) *100)",
+					"expr": "ingestion_redis_stream_length",
 					"refId": "A",
-					"legendFormat": "CPU %"
+					"legendFormat": "Longitud stream"
+				},
+				{
+					"expr": "ingestion_redis_pending_messages",
+					"refId": "B",
+					"legendFormat": "Pendientes"
+				},
+				{
+					"expr": "ingestion_redis_consumer_lag",
+					"refId": "C",
+					"legendFormat": "Lag consumidor"
+				},
+				{
+					"expr": "ingestion_batch_buffer_size",
+					"refId": "D",
+					"legendFormat": "Buffer batch"
 				}
 			],
 			"fieldConfig": {
 				"defaults": {
-					"unit": "percent",
-					"decimals": 1,
-					"thresholds": {
-						"mode": "absolute",
-						"steps": [
-							{ "color": "green", "value": 0 },
-							{ "color": "orange", "value": 60 },
-							{ "color": "red", "value": 85 }
-						]
-					}
+					"unit": "none",
+					"decimals": 0
 				}
 			},
-			"gridPos": { "x": 0, "y": 33, "w": 12, "h": 8 }
+			"gridPos": { "x": 0, "y": 32, "w": 16, "h": 8 }
 		},
 		{
-			"type": "timeseries",
-			"title": "Memoria disponible Node Exporter (GiB)",
+			"type": "stat",
+			"title": "Lag consumidor actual",
 			"datasource": "Prometheus",
 			"targets": [
 				{
-					"expr": "node_memory_MemAvailable_bytes/1024/1024/1024",
+					"expr": "ingestion_redis_consumer_lag",
 					"refId": "A",
-					"legendFormat": "Memoria disponible"
-				}
-			],
-			"fieldConfig": {
-				"defaults": {
-					"unit": "gigabytes",
-					"decimals": 2,
-					"thresholds": {
-						"mode": "absolute",
-						"steps": [
-							{ "color": "red", "value": 0 },
-							{ "color": "orange", "value": 0.5 },
-							{ "color": "green", "value": 1 }
-						]
-					}
-				}
-			},
-			"gridPos": { "x": 12, "y": 33, "w": 12, "h": 8 }
-		},
-		{
-			"type": "timeseries",
-			"title": "Conexiones Postgres (railway)",
-			"datasource": "Prometheus",
-			"targets": [
-				{
-					"expr": "sum(pg_stat_database_numbackends{datname=\"railway\"})",
-					"refId": "A",
-					"legendFormat": "Conexiones activas"
+					"legendFormat": "Lag"
 				}
 			],
 			"fieldConfig": {
@@ -284,24 +290,24 @@
 					"thresholds": {
 						"mode": "absolute",
 						"steps": [
-							{ "color": "green", "value": 0 },
-							{ "color": "orange", "value": 50 },
-							{ "color": "red", "value": 90 }
+							{ "value": 0, "color": "green" },
+							{ "value": 250, "color": "orange" },
+							{ "value": 500, "color": "red" }
 						]
 					}
 				}
 			},
-			"gridPos": { "x": 0, "y": 41, "w": 12, "h": 8 }
+			"gridPos": { "x": 16, "y": 32, "w": 8, "h": 4 }
 		},
 		{
-			"type": "timeseries",
-			"title": "Locks Postgres",
+			"type": "stat",
+			"title": "Buffer batch actual",
 			"datasource": "Prometheus",
 			"targets": [
 				{
-					"expr": "pg_locks_count",
+					"expr": "ingestion_batch_buffer_size",
 					"refId": "A",
-					"legendFormat": "Locks activos"
+					"legendFormat": "Buffer"
 				}
 			],
 			"fieldConfig": {
@@ -311,14 +317,14 @@
 					"thresholds": {
 						"mode": "absolute",
 						"steps": [
-							{ "color": "green", "value": 0 },
-							{ "color": "orange", "value": 5 },
-							{ "color": "red", "value": 20 }
+							{ "value": 0, "color": "green" },
+							{ "value": 100, "color": "orange" },
+							{ "value": 250, "color": "red" }
 						]
 					}
 				}
 			},
-			"gridPos": { "x": 12, "y": 41, "w": 12, "h": 8 }
+			"gridPos": { "x": 16, "y": 36, "w": 8, "h": 4 }
 		}
 	],
 	"templating": { "list": [] },

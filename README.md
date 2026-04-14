@@ -84,6 +84,27 @@ curl http://localhost/query/health
 curl http://localhost/twins/health
 ```
 
+## Checklist de integración de observabilidad
+
+Después de `docker compose up --build -d`, validar:
+
+1. Estado de servicios:
+	- `telemetry-ingestion-service`, `query-monitoring-service`, `digital-twin-integration-service`, `prometheus` y `grafana` en estado `healthy`.
+2. Targets en Prometheus:
+	- Abrir `http://localhost:9090/targets`.
+	- Confirmar que están `UP` los jobs: `telemetry-ingestion-service`, `query-monitoring-service`, `digital-twin-integration-service`, `prometheus`, `grafana`.
+3. Reglas de alertas cargadas:
+	- Abrir `http://localhost:9090/rules`.
+	- Confirmar grupos `disponibilidad-servicios`, `rendimiento-api` e `ingestion-broker`.
+4. Provisioning automático de Grafana:
+	- Ingresar a `http://localhost:3000`.
+	- Verificar datasource `Prometheus` aprovisionado automáticamente.
+	- Verificar dashboard `Vermicompost IoT - Observabilidad Backend` en carpeta `Observabilidad`.
+5. Métricas nuevas de backend visibles:
+	- Validar series `ingestion_broker_enqueue_total`, `ingestion_broker_processed_total`, `ingestion_broker_process_seconds`, `ingestion_redis_stream_length`, `ingestion_redis_pending_messages`, `ingestion_redis_consumer_lag`, `ingestion_batch_buffer_size`.
+6. SLO de latencia:
+	- Confirmar panel y alertas p95 para ingesta y consulta con umbral de 5000 ms.
+
 ## Pruebas recomendadas en local
 
 ```bash

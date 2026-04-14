@@ -21,8 +21,8 @@ services:
       GF_METRICS_ENABLED: "true"
     volumes:
       - grafana-storage:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro,Z
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro,Z
     networks:
       - vermicompost-net
     healthcheck:
@@ -192,8 +192,8 @@ services:
       - --storage.tsdb.wal-compression
       - --web.enable-lifecycle
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./monitoring/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro,Z
+      - ./monitoring/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro,Z
       - prometheus-data:/prometheus
     depends_on:
       telemetry-ingestion-service:
@@ -217,7 +217,7 @@ services:
     build:
       context: ./api-gateway
     ports:
-      - "80:80"
+      - "8080:80"
     depends_on:
       telemetry-ingestion-service:
         condition: service_healthy
