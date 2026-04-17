@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 import logging
 import os
+import threading
 import time
 import uuid
 
@@ -8,10 +9,16 @@ from fastapi import FastAPI, Request
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.routes import router
+from app.config import settings
+from app.database.connection import SessionLocal
+from app.metrics.prometheus import update_monitoring_summary_metrics, update_sensor_metrics_by_cama
+from app.services import query_service
 
 logger = logging.getLogger(__name__)
 NOISY_PATHS = {"/health", "/metrics"}
 SLOW_REQUEST_WARN_MS = float(os.getenv("SLOW_REQUEST_WARN_MS", "5000"))
+_metrics_refresh_stop_event = threading.Event()
+_metrics_refresh_thread: threading.Thread | None = None
 
 
 def _setup_logging() -> None:
@@ -23,11 +30,51 @@ def _setup_logging() -> None:
     )
 
 
+def _refresh_custom_metrics_once() -> None:
+    db = SessionLocal()
+    try:
+        summary = query_service.get_monitoring_summary(
+            db,
+            disconnect_minutes=settings.monitoring_disconnect_minutes,
+        )
+        sensor_by_cama = query_service.get_latest_sensor_averages_by_cama(db)
+        update_monitoring_summary_metrics(summary)
+        update_sensor_metrics_by_cama(sensor_by_cama)
+    except Exception:
+        logger.exception("Failed to refresh custom monitoring metrics")
+    finally:
+        db.close()
+
+
+def _custom_metrics_refresh_loop() -> None:
+    refresh_interval = settings.monitoring_metrics_refresh_seconds
+    logger.info(
+        "Custom metrics refresher started interval_s=%s disconnect_minutes=%s",
+        refresh_interval,
+        settings.monitoring_disconnect_minutes,
+    )
+    while not _metrics_refresh_stop_event.wait(refresh_interval):
+        _refresh_custom_metrics_once()
+    logger.info("Custom metrics refresher stopped")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Read-only service — tables are owned and created by the write services
+    global _metrics_refresh_thread
+
     logger.info("Starting query-monitoring-service")
+    _metrics_refresh_stop_event.clear()
+    _refresh_custom_metrics_once()
+    _metrics_refresh_thread = threading.Thread(target=_custom_metrics_refresh_loop, name="query-metrics-refresh", daemon=True)
+    _metrics_refresh_thread.start()
+
     yield
+
+    _metrics_refresh_stop_event.set()
+    if _metrics_refresh_thread and _metrics_refresh_thread.is_alive():
+        _metrics_refresh_thread.join(timeout=3)
+    _metrics_refresh_thread = None
     logger.info("Stopping query-monitoring-service")
 
 

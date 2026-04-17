@@ -93,7 +93,9 @@ def seeded_data(db_session):
 
     return {
         "cama1_id": cama1.cama_id,
+        "cama2_id": cama2.cama_id,
         "nodo1_id": nodo1.nodo_id,
+        "nodo2_id": nodo2.nodo_id,
         "tipo_temp_id": tipo_temp.tipo_variable_id,
         "now": now,
     }
@@ -145,3 +147,40 @@ def test_get_monitoring_summary_counts_disconnected_and_invalid(db_session, seed
     assert summary["nodos_desconectados"] == 1
     assert summary["nodos_conectados"] == 1
     assert summary["lecturas_invalidas"] == 2
+
+
+def test_get_latest_sensor_averages_by_cama_groups_domain_metrics(db_session, seeded_data):
+    now = seeded_data["now"]
+    tipo_ph = TipoVariable(nombre="pH", unidad_medida="pH")
+    db_session.add(tipo_ph)
+    db_session.flush()
+
+    lectura_ph_nodo_1 = Lectura(
+        nodo_id=seeded_data["nodo1_id"],
+        tipo_variable_id=tipo_ph.tipo_variable_id,
+        valor=6.8,
+        fecha_medicion=now - timedelta(minutes=3),
+        fecha_recepcion=now - timedelta(minutes=3),
+    )
+    lectura_ph_nodo_2 = Lectura(
+        nodo_id=seeded_data["nodo2_id"],
+        tipo_variable_id=tipo_ph.tipo_variable_id,
+        valor=7.1,
+        fecha_medicion=now - timedelta(minutes=2),
+        fecha_recepcion=now - timedelta(minutes=2),
+    )
+    db_session.add_all([lectura_ph_nodo_1, lectura_ph_nodo_2])
+    db_session.commit()
+
+    rows = query_service.get_latest_sensor_averages_by_cama(db_session)
+    by_cama = {row["cama_id"]: row for row in rows}
+
+    cama_1 = by_cama[seeded_data["cama1_id"]]
+    assert cama_1["temperatura"] == pytest.approx(25.6)
+    assert cama_1["humedad"] == pytest.approx(61.2)
+    assert cama_1["ph"] == pytest.approx(6.8)
+
+    cama_2 = by_cama[seeded_data["cama2_id"]]
+    assert cama_2["temperatura"] is None
+    assert cama_2["humedad"] is None
+    assert cama_2["ph"] == pytest.approx(7.1)

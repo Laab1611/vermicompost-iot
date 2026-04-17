@@ -4,7 +4,7 @@
 	"title": "Vermicompost IoT - Observabilidad Backend",
 	"timezone": "browser",
 	"schemaVersion": 30,
-	"version": 2,
+	"version": 4,
 	"refresh": "30s",
 	"panels": [
 		{
@@ -256,7 +256,7 @@
 				{
 					"expr": "ingestion_redis_consumer_lag",
 					"refId": "C",
-					"legendFormat": "Lag consumidor"
+					"legendFormat": "Mensajes atrasados"
 				},
 				{
 					"expr": "ingestion_batch_buffer_size",
@@ -274,13 +274,13 @@
 		},
 		{
 			"type": "stat",
-			"title": "Lag consumidor actual",
+			"title": "Mensajes atrasados del consumidor (Redis)",
 			"datasource": "Prometheus",
 			"targets": [
 				{
 					"expr": "ingestion_redis_consumer_lag",
 					"refId": "A",
-					"legendFormat": "Lag"
+					"legendFormat": "Mensajes atrasados"
 				}
 			],
 			"fieldConfig": {
@@ -325,6 +325,167 @@
 				}
 			},
 			"gridPos": { "x": 16, "y": 36, "w": 8, "h": 4 }
+		},
+		{
+			"type": "row",
+			"title": "Sensores por cama",
+			"gridPos": { "x": 0, "y": 40, "w": 24, "h": 1 },
+			"collapsed": false
+		},
+		{
+			"type": "timeseries",
+			"title": "Temperatura por cama (°C)",
+			"datasource": "Prometheus",
+			"targets": [
+				{
+					"expr": "query_sensor_temperatura_celsius",
+					"refId": "A",
+					"legendFormat": "{{cama_nombre}} (cama {{cama_id}})"
+				}
+			],
+			"fieldConfig": {
+				"defaults": {
+					"unit": "celsius",
+					"decimals": 2
+				}
+			},
+			"gridPos": { "x": 0, "y": 41, "w": 8, "h": 8 }
+		},
+		{
+			"type": "timeseries",
+			"title": "Humedad por cama (%)",
+			"datasource": "Prometheus",
+			"targets": [
+				{
+					"expr": "query_sensor_humedad_relativa_percent",
+					"refId": "A",
+					"legendFormat": "{{cama_nombre}} (cama {{cama_id}})"
+				}
+			],
+			"fieldConfig": {
+				"defaults": {
+					"unit": "percent",
+					"decimals": 2
+				}
+			},
+			"gridPos": { "x": 8, "y": 41, "w": 8, "h": 8 }
+		},
+		{
+			"type": "timeseries",
+			"title": "pH por cama",
+			"datasource": "Prometheus",
+			"targets": [
+				{
+					"expr": "query_sensor_ph",
+					"refId": "A",
+					"legendFormat": "{{cama_nombre}} (cama {{cama_id}})"
+				}
+			],
+			"fieldConfig": {
+				"defaults": {
+					"unit": "none",
+					"decimals": 2
+				}
+			},
+			"gridPos": { "x": 16, "y": 41, "w": 8, "h": 8 }
+		},
+		{
+			"type": "stat",
+			"title": "Nodos conectados",
+			"datasource": "Prometheus",
+			"targets": [
+				{
+					"expr": "query_monitoring_nodos_conectados",
+					"refId": "A"
+				}
+			],
+			"fieldConfig": {
+				"defaults": {
+					"unit": "none",
+					"decimals": 0
+				}
+			},
+			"gridPos": { "x": 0, "y": 49, "w": 5, "h": 5 }
+		},
+		{
+			"type": "stat",
+			"title": "Nodos desconectados",
+			"datasource": "Prometheus",
+			"targets": [
+				{
+					"expr": "query_monitoring_nodos_desconectados",
+					"refId": "A"
+				}
+			],
+			"fieldConfig": {
+				"defaults": {
+					"unit": "none",
+					"decimals": 0,
+					"thresholds": {
+						"mode": "absolute",
+						"steps": [
+							{ "value": 0, "color": "green" },
+							{ "value": 1, "color": "orange" },
+							{ "value": 5, "color": "red" }
+						]
+					}
+				}
+			},
+			"gridPos": { "x": 5, "y": 49, "w": 5, "h": 5 }
+		},
+		{
+			"type": "stat",
+			"title": "Lecturas inválidas",
+			"datasource": "Prometheus",
+			"targets": [
+				{
+					"expr": "query_monitoring_lecturas_invalidas",
+					"refId": "A"
+				}
+			],
+			"fieldConfig": {
+				"defaults": {
+					"unit": "none",
+					"decimals": 0
+				}
+			},
+			"gridPos": { "x": 10, "y": 49, "w": 5, "h": 5 }
+		},
+		{
+			"type": "stat",
+			"title": "Total nodos",
+			"datasource": "Prometheus",
+			"targets": [
+				{
+					"expr": "query_monitoring_total_nodos",
+					"refId": "A"
+				}
+			],
+			"fieldConfig": {
+				"defaults": {
+					"unit": "none",
+					"decimals": 0
+				}
+			},
+			"gridPos": { "x": 15, "y": 49, "w": 4, "h": 5 }
+		},
+		{
+			"type": "stat",
+			"title": "Total camas",
+			"datasource": "Prometheus",
+			"targets": [
+				{
+					"expr": "query_monitoring_total_camas",
+					"refId": "A"
+				}
+			],
+			"fieldConfig": {
+				"defaults": {
+					"unit": "none",
+					"decimals": 0
+				}
+			},
+			"gridPos": { "x": 19, "y": 49, "w": 5, "h": 5 }
 		}
 	],
 	"templating": { "list": [] },

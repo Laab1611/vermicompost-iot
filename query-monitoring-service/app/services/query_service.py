@@ -1,7 +1,8 @@
 from datetime import UTC, datetime, timedelta
 import logging
+import unicodedata
 
-from sqlalchemy import desc, func, literal
+from sqlalchemy import and_, desc, func, literal
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -33,6 +34,23 @@ def _to_naive_utc(value: datetime) -> datetime:
 def _validate_range(start: datetime, end: datetime) -> None:
     if _to_naive_utc(start) > _to_naive_utc(end):
         raise ValidationError("start no puede ser mayor que end")
+
+
+def _normalize_tipo_variable(nombre: str | None) -> str | None:
+    if not nombre:
+        return None
+
+    normalized = unicodedata.normalize("NFKD", nombre)
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char)).strip().lower()
+    compact = normalized.replace(" ", "")
+
+    if "temperatura" in normalized:
+        return "temperatura"
+    if "humedad" in normalized:
+        return "humedad"
+    if compact == "ph" or "ph" in compact:
+        return "ph"
+    return None
 
 
 def _get_nodo_or_fail(db: Session, nodo_id: int) -> NodoSensor:
@@ -369,3 +387,87 @@ def get_monitoring_summary(db: Session, disconnect_minutes: int = 15) -> dict:
     except SQLAlchemyError as exc:
         logger.exception("Query get_monitoring_summary failed")
         raise PersistenceError("error al consultar resumen de monitoreo") from exc
+
+
+def get_latest_sensor_averages_by_cama(db: Session) -> list[dict]:
+    logger.debug("Query get_latest_sensor_averages_by_cama start")
+    try:
+        latest_per_nodo_tipo = (
+            db.query(
+                Lectura.nodo_id.label("nodo_id"),
+                Lectura.tipo_variable_id.label("tipo_variable_id"),
+                func.max(Lectura.fecha_recepcion).label("max_fecha_recepcion"),
+            )
+            .group_by(Lectura.nodo_id, Lectura.tipo_variable_id)
+            .subquery()
+        )
+
+        rows = (
+            db.query(
+                NodoSensor.cama_id,
+                CamaVermicompostaje.nombre,
+                TipoVariable.nombre,
+                Lectura.valor,
+            )
+            .join(
+                latest_per_nodo_tipo,
+                and_(
+                    Lectura.nodo_id == latest_per_nodo_tipo.c.nodo_id,
+                    Lectura.tipo_variable_id == latest_per_nodo_tipo.c.tipo_variable_id,
+                    Lectura.fecha_recepcion == latest_per_nodo_tipo.c.max_fecha_recepcion,
+                ),
+            )
+            .join(NodoSensor, NodoSensor.nodo_id == Lectura.nodo_id)
+            .join(CamaVermicompostaje, CamaVermicompostaje.cama_id == NodoSensor.cama_id)
+            .join(TipoVariable, TipoVariable.tipo_variable_id == Lectura.tipo_variable_id)
+            .all()
+        )
+
+        aggregates: dict[int, dict] = {}
+        for cama_id, cama_nombre, tipo_variable_nombre, valor in rows:
+            sensor_key = _normalize_tipo_variable(tipo_variable_nombre)
+            if sensor_key is None:
+                continue
+
+            entry = aggregates.setdefault(
+                int(cama_id),
+                {
+                    "cama_id": int(cama_id),
+                    "cama_nombre": str(cama_nombre),
+                    "temperatura_sum": 0.0,
+                    "temperatura_count": 0,
+                    "humedad_sum": 0.0,
+                    "humedad_count": 0,
+                    "ph_sum": 0.0,
+                    "ph_count": 0,
+                },
+            )
+
+            entry[f"{sensor_key}_sum"] += float(valor)
+            entry[f"{sensor_key}_count"] += 1
+
+        result = []
+        for item in sorted(aggregates.values(), key=lambda value: value["cama_id"]):
+            temperatura = (
+                item["temperatura_sum"] / item["temperatura_count"]
+                if item["temperatura_count"] > 0
+                else None
+            )
+            humedad = item["humedad_sum"] / item["humedad_count"] if item["humedad_count"] > 0 else None
+            ph = item["ph_sum"] / item["ph_count"] if item["ph_count"] > 0 else None
+
+            result.append(
+                {
+                    "cama_id": item["cama_id"],
+                    "cama_nombre": item["cama_nombre"],
+                    "temperatura": temperatura,
+                    "humedad": humedad,
+                    "ph": ph,
+                }
+            )
+
+        logger.debug("Query get_latest_sensor_averages_by_cama completed camas=%s", len(result))
+        return result
+    except SQLAlchemyError as exc:
+        logger.exception("Query get_latest_sensor_averages_by_cama failed")
+        raise PersistenceError("error al consultar promedios de sensores por cama") from exc
