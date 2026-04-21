@@ -16,3 +16,7 @@ build/
 
 #vsCode settings
 .vscode/
+
+#local files
+AGENTS.md
+SRS.md
