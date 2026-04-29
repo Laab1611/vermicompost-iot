@@ -1,4 +1,4 @@
-# Environment — never commit real credentials
+# Environment
 .env
 
 # Python
@@ -10,13 +10,10 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+.pytest_cache/
 
 # Docker
 *.log
 
 #vsCode settings
 .vscode/
-
-#local files
-AGENTS.md
-SRS.md
