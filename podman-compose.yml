@@ -51,9 +51,6 @@ services:
       REDIS_CONSUMER_GROUP: ${REDIS_CONSUMER_GROUP:-telemetry-ingestion-group}
       REDIS_CONSUMER_NAME: ${REDIS_CONSUMER_NAME_API:-telemetry-ingestion-api}
       REDIS_POLL_TIMEOUT_MS: ${REDIS_POLL_TIMEOUT_MS:-1000}
-      # RABBITMQ_URL: ${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/%2F}
-      # RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE:-}
-      # RABBITMQ_ROUTING_KEY: ${RABBITMQ_ROUTING_KEY:-}
     depends_on:
       redis:
         condition: service_healthy
