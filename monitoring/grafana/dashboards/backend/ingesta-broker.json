@@ -1,0 +1,278 @@
+{
+  "id": null,
+  "uid": "vermicompost-ingesta-broker",
+  "title": "Vermicompost IoT - Ingesta Y Broker",
+  "tags": ["vermicompost", "backend", "ingesta", "broker", "redis"],
+  "timezone": "browser",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "30s",
+  "editable": false,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Mensajes encolados (req/s)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(ingestion_broker_enqueue_total[5m])) or vector(0)",
+          "legendFormat": "Encolados",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "decimals": 2 },
+        "overrides": []
+      },
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Procesados OK (msg/s)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(ingestion_broker_processed_total{status=\"ok\"}[5m])) or vector(0)",
+          "legendFormat": "OK",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "decimals": 2 },
+        "overrides": []
+      },
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Procesados error (msg/s)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(ingestion_broker_processed_total{status=\"error\"}[5m])) or vector(0)",
+          "legendFormat": "Error",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 0.01, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Lag consumidor Redis",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(ingestion_redis_consumer_lag) or vector(0)",
+          "legendFormat": "Lag",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 250, "color": "orange" },
+              { "value": 500, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Mensajes encolados y procesados",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(ingestion_broker_enqueue_total[5m])) or vector(0)",
+          "legendFormat": "Encolados",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(ingestion_broker_processed_total{status=\"ok\"}[5m])) or vector(0)",
+          "legendFormat": "Procesados OK",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(ingestion_broker_processed_total{status=\"error\"}[5m])) or vector(0)",
+          "legendFormat": "Procesados error",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ops", "decimals": 2 },
+        "overrides": []
+      },
+      "gridPos": { "x": 0, "y": 5, "w": 12, "h": 8 }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Latencia p95 de procesamiento broker (ms)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(ingestion_broker_process_seconds_bucket[5m]))) * 1000 or vector(0)",
+          "legendFormat": "p95 broker",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 1000, "color": "orange" },
+              { "value": 2000, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 12, "y": 5, "w": 12, "h": 8 }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Redis Streams y buffer",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(ingestion_redis_stream_length) or vector(0)",
+          "legendFormat": "Longitud stream",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(ingestion_redis_pending_messages) or vector(0)",
+          "legendFormat": "Pendientes",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(ingestion_redis_consumer_lag) or vector(0)",
+          "legendFormat": "Lag consumidor",
+          "refId": "C"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(ingestion_batch_buffer_size) or vector(0)",
+          "legendFormat": "Buffer batch",
+          "refId": "D"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "decimals": 0 },
+        "overrides": []
+      },
+      "gridPos": { "x": 0, "y": 13, "w": 16, "h": 8 }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Pendientes Redis",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(ingestion_redis_pending_messages) or vector(0)",
+          "legendFormat": "Pendientes",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 100, "color": "orange" },
+              { "value": 250, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 16, "y": 13, "w": 8, "h": 4 }
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Buffer batch actual",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(ingestion_batch_buffer_size) or vector(0)",
+          "legendFormat": "Buffer",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 100, "color": "orange" },
+              { "value": 250, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 16, "y": 17, "w": 8, "h": 4 }
+    }
+  ],
+  "templating": { "list": [] },
+  "annotations": {
+    "list": [
+      { "name": "Eventos", "type": "dashboard", "builtIn": 1, "enable": true }
+    ]
+  }
+}

@@ -11,7 +11,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from app.api.routes import router
 from app.config import settings
 from app.database.connection import SessionLocal
-from app.metrics.prometheus import update_monitoring_summary_metrics, update_sensor_metrics_by_cama
+from app.metrics.prometheus import update_cama_info_metrics, update_monitoring_summary_metrics, update_sensor_metrics_by_cama
 from app.services import query_service
 
 logger = logging.getLogger(__name__)
@@ -33,11 +33,13 @@ def _setup_logging() -> None:
 def _refresh_custom_metrics_once() -> None:
     db = SessionLocal()
     try:
+        camas = query_service.list_camas(db)
         summary = query_service.get_monitoring_summary(
             db,
             disconnect_minutes=settings.monitoring_disconnect_minutes,
         )
         sensor_by_cama = query_service.get_latest_sensor_averages_by_cama(db)
+        update_cama_info_metrics(camas)
         update_monitoring_summary_metrics(summary)
         update_sensor_metrics_by_cama(sensor_by_cama)
     except Exception:

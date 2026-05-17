@@ -2,6 +2,12 @@ from collections.abc import Sequence
 
 from prometheus_client import Gauge
 
+query_cama_info = Gauge(
+	"query_cama_info",
+	"Camas registradas disponibles para tableros de dominio",
+	["cama_id", "cama_nombre", "ubicacion"],
+)
+
 query_sensor_temperatura_celsius = Gauge(
 	"query_sensor_temperatura_celsius",
 	"Temperatura promedio por cama (ultima lectura por nodo)",
@@ -44,6 +50,16 @@ query_monitoring_lecturas_invalidas = Gauge(
 	"query_monitoring_lecturas_invalidas",
 	"Total de lecturas invalidas registradas",
 )
+
+
+def update_cama_info_metrics(camas: Sequence) -> None:
+	query_cama_info.clear()
+	for cama in camas:
+		query_cama_info.labels(
+			cama_id=str(cama.cama_id),
+			cama_nombre=str(cama.nombre),
+			ubicacion=str(cama.ubicacion),
+		).set(1)
 
 
 def update_sensor_metrics_by_cama(rows: Sequence[dict]) -> None:

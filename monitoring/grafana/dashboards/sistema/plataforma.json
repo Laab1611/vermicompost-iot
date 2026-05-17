@@ -1,0 +1,216 @@
+{
+  "id": null,
+  "uid": "vermicompost-plataforma",
+  "title": "Vermicompost IoT - Plataforma",
+  "tags": ["vermicompost", "plataforma", "prometheus", "grafana"],
+  "timezone": "browser",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "30s",
+  "editable": false,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Targets UP",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"})",
+          "legendFormat": "Targets UP",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "red" },
+              { "value": 4, "color": "orange" },
+              { "value": 5, "color": "green" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Prometheus reload OK",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(prometheus_config_last_reload_successful) or vector(0)",
+          "legendFormat": "Reload OK",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "red" },
+              { "value": 1, "color": "green" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Alertas activas",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(ALERTS{alertstate=\"firing\"}) or vector(0)",
+          "legendFormat": "Firing",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 1, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Scrapes fallidos",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"} == 0) or vector(0)",
+          "legendFormat": "Down",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 1, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Estado de scrape por target",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"}",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "decimals": 0, "min": 0, "max": 1 },
+        "overrides": []
+      },
+      "gridPos": { "x": 0, "y": 5, "w": 12, "h": 8 }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Duración de scrape (ms)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "scrape_duration_seconds{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"} * 1000",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "decimals": 2 },
+        "overrides": []
+      },
+      "gridPos": { "x": 12, "y": 5, "w": 12, "h": 8 }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Muestras recolectadas por scrape",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "scrape_samples_scraped{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"}",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "decimals": 0 },
+        "overrides": []
+      },
+      "gridPos": { "x": 0, "y": 13, "w": 12, "h": 8 }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Prometheus TSDB muestras agregadas",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "prometheus_tsdb_head_samples_appended_total",
+          "legendFormat": "Muestras agregadas",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "decimals": 0 },
+        "overrides": []
+      },
+      "gridPos": { "x": 12, "y": 13, "w": 12, "h": 8 }
+    }
+  ],
+  "templating": { "list": [] },
+  "annotations": {
+    "list": [
+      { "name": "Eventos", "type": "dashboard", "builtIn": 1, "enable": true }
+    ]
+  }
+}
