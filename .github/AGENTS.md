@@ -11,7 +11,7 @@
 ## Commands
 
 - Full stack uses the Podman Compose wrapper: `source ~/Documents/code/py_venvs/podman_compose/bin/activate`, then `podman-compose up --build -d`.
-- Gateway smoke checks: `curl http://localhost/telemetry/health`, `curl http://localhost/query/health`, `curl http://localhost/twins/health`.
+- Gateway smoke checks: `curl http://localhost:8080/telemetry/health`, `curl http://localhost:8080/query/health`, `curl http://localhost:8080/twins/health`.
 - Run a service locally from its service directory: `uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log`.
 - Run the ingestion worker locally from `telemetry-ingestion-service/`: `python -m app.worker`.
 - Recommended repo-level verification: `python -m pytest telemetry-ingestion-service/tests`, `python -m pytest query-monitoring-service/tests`, `python -m pytest digital-twin-service/tests`, then `python -m compileall telemetry-ingestion-service query-monitoring-service digital-twin-service`.
