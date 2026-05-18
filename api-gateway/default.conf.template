@@ -1,5 +1,10 @@
 map_hash_bucket_size 256;
 
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
 map $http_authorization $api_bearer_ok {
     default 0;
     "Bearer ${API_BEARER_TOKEN}" 1;
