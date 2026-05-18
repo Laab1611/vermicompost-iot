@@ -10,7 +10,8 @@
 
 ## Commands
 
-- Full stack uses the Podman Compose wrapper: `sh scripts/generate-local-cert.sh`, `source ~/Documents/code/py_venvs/podman_compose/bin/activate`, then `podman-compose up --build -d`.
+- Full stack uses the Podman Compose wrapper: `source ~/Documents/code/py_venvs/podman_compose/bin/activate`, then `podman-compose up --build -d`. The compose-managed cert provisioner generates `.certs/localhost.crt` automatically.
+- Backup on Windows 11 or when needed: `docker compose up --build -d`.
 - Gateway smoke checks: `curl -k https://localhost:8443/telemetry/health`, `curl -k https://localhost:8443/query/health`, `curl -k https://localhost:8443/twins/health`.
 - Run a service locally from its service directory: `uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log`.
 - Run the ingestion worker locally from `telemetry-ingestion-service/`: `python -m app.worker`.
