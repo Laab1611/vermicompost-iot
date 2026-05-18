@@ -10,6 +10,8 @@ map $http_authorization $api_bearer_ok {
     "Bearer ${API_BEARER_TOKEN}" 1;
 }
 
+error_log /dev/stderr warn;
+
 server {
     listen 443 ssl;
     server_name _;
@@ -32,6 +34,7 @@ server {
     }
 
     location = /telemetry/health {
+        access_log off;
         proxy_pass http://telemetry-ingestion-service:8000/health;
     }
 
@@ -44,6 +47,7 @@ server {
     }
 
     location = /query/health {
+        access_log off;
         proxy_pass http://query-monitoring-service:8000/health;
     }
 
@@ -56,6 +60,7 @@ server {
     }
 
     location = /twins/health {
+        access_log off;
         proxy_pass http://digital-twin-integration-service:8000/health;
     }
 
