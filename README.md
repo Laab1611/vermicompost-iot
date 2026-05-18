@@ -73,8 +73,11 @@ curl -k https://localhost:8443/twins/health
 2. Construye y levanta. Compose provisiona el certificado local en `.certs/` automáticamente:
 
 ```bash
-source ~/Documents/code/py_venvs/podman_compose/bin/activate
+# Linux
 podman-compose up --build -d
+
+# Windows
+docker compose up --build -d
 ```
 
 3. Smoke test:
@@ -87,7 +90,7 @@ curl -k https://localhost:8443/twins/health
 
 ## Checklist de integración de observabilidad
 
-Después de `podman-compose up --build -d`, validar:
+Después de `podman-compose up --build -d` o `docker compose up --build -d`, validar:
 
 1. Estado de servicios:
 	- `telemetry-ingestion-service`, `query-monitoring-service`, `digital-twin-integration-service`, `prometheus` y `grafana` en estado `healthy`.
@@ -133,7 +136,6 @@ Proveedor de broker configurable:
 
 - `BROKER_PROVIDER=redis` como opción recomendada para entorno limitado.
 - `BROKER_PROVIDER=memory` para pruebas locales sin infraestructura externa.
-<!-- - `BROKER_PROVIDER=rabbitmq` para integración con RabbitMQ. -->
 
 Controles de batch en modo broker:
 
