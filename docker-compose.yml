@@ -219,9 +219,7 @@ services:
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-15d}
       - --storage.tsdb.wal-compression
-      - --web.enable-lifecycle
       - --web.route-prefix=/
-      - --web.external-url=${PROMETHEUS_EXTERNAL_URL:-https://localhost:8443/prometheus/}
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./monitoring/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro
