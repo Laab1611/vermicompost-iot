@@ -8,6 +8,8 @@ services:
     build:
       context: ./cert-provisioner
     restart: unless-stopped
+    environment:
+      CERT_SUBJECT_ALT_NAME: ${CERT_SUBJECT_ALT_NAME:-DNS:localhost,IP:127.0.0.1}
     volumes:
       - ./.certs:/certs
     healthcheck:
@@ -38,9 +40,9 @@ services:
       GF_SECURITY_ALLOW_EMBEDDING: "true"
       GF_AUTH_ANONYMOUS_ENABLED: "false"
       GF_SECURITY_DISABLE_GRAVATAR: "true"
-      GF_SECURITY_CSRF_TRUSTED_ORIGINS: https://localhost:8443,https://127.0.0.1:8443
+      GF_SECURITY_CSRF_TRUSTED_ORIGINS: ${GRAFANA_CSRF_TRUSTED_ORIGINS:-https://localhost:8443,https://127.0.0.1:8443}
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-https://localhost:8443/grafana/}
       GF_SECURITY_CSRF_ADDITIONAL_HEADERS: X-Forwarded-Host
-      GF_SERVER_ROOT_URL: https://localhost:8443/grafana/
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
       GF_PATHS_PROVISIONING: /etc/grafana/provisioning
       GF_METRICS_ENABLED: "true"
@@ -218,8 +220,8 @@ services:
       - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-15d}
       - --storage.tsdb.wal-compression
       - --web.enable-lifecycle
-      - --web.external-url=https://localhost:8443/prometheus/
       - --web.route-prefix=/
+      - --web.external-url=${PROMETHEUS_EXTERNAL_URL:-https://localhost:8443/prometheus/}
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./monitoring/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro
@@ -247,7 +249,7 @@ services:
       context: ./api-gateway
     sysctls: *disable-ipv6-sysctls
     ports:
-      - "127.0.0.1:8443:443"
+      - "${NGINX_HTTPS_BIND:-127.0.0.1:8443}:443"
     volumes:
       - ./.certs:/etc/nginx/certs:ro
     depends_on:
