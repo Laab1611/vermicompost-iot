@@ -6,4 +6,4 @@
   - `gatewayHost`
   - `gatewayPort`
 - Mantén los IDs del payload tal como están para cubrir los datos de prueba.
-- Para TLS local autofirmado, desactiva la verificación SSL en Postman o utiliza `.certs/localhost.crt`.
+- Para TLS local autofirmado, desactiva la verificación SSL en Postman o utiliza `.certs/localhost.crt` generado por Compose.

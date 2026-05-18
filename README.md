@@ -70,19 +70,14 @@ curl -k https://localhost:8443/twins/health
 ## Levantar proyecto
 
 1. Configura .env con DATABASE_URL.
-2. Genera el certificado local autofirmado:
+2. Construye y levanta. Compose provisiona el certificado local en `.certs/` automáticamente:
 
 ```bash
-sh scripts/generate-local-cert.sh
+source ~/Documents/code/py_venvs/podman_compose/bin/activate
+podman-compose up --build -d
 ```
 
-3. Construye y levanta:
-
-```bash
-docker compose up --build -d
-```
-
-4. Smoke test:
+3. Smoke test:
 
 ```bash
 curl -k https://localhost:8443/telemetry/health
@@ -92,7 +87,7 @@ curl -k https://localhost:8443/twins/health
 
 ## Checklist de integración de observabilidad
 
-Después de `docker compose up --build -d`, validar:
+Después de `podman-compose up --build -d`, validar:
 
 1. Estado de servicios:
 	- `telemetry-ingestion-service`, `query-monitoring-service`, `digital-twin-integration-service`, `prometheus` y `grafana` en estado `healthy`.

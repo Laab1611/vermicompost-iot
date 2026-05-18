@@ -4,12 +4,30 @@ x-disable-ipv6-sysctls: &disable-ipv6-sysctls
 
 services:
 
+  cert-provisioner:
+    build:
+      context: ./cert-provisioner
+    restart: unless-stopped
+    volumes:
+      - ./.certs:/certs
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "test -s /certs/localhost.crt && test -s /certs/localhost.key && openssl x509 -in /certs/localhost.crt -noout -subject -nameopt RFC2253 | grep -q 'O=UAO' && openssl x509 -in /certs/localhost.crt -noout -subject -nameopt RFC2253 | grep -q 'OU=BISITE Team EdgeAIoT'",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
   grafana:
     image: grafana/grafana-enterprise:latest
     container_name: grafana-enterprise
     restart: unless-stopped
     sysctls: *disable-ipv6-sysctls
     depends_on:
+      cert-provisioner:
+        condition: service_healthy
       prometheus:
         condition: service_healthy
     env_file:
@@ -207,6 +225,8 @@ services:
       - ./monitoring/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro
       - prometheus-data:/prometheus
     depends_on:
+      cert-provisioner:
+        condition: service_healthy
       telemetry-ingestion-service:
         condition: service_healthy
       query-monitoring-service:
