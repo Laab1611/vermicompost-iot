@@ -1,3 +1,5 @@
+map_hash_bucket_size 256;
+
 map $http_authorization $api_bearer_ok {
     default 0;
     "Bearer ${API_BEARER_TOKEN}" 1;
