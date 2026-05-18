@@ -6,6 +6,16 @@
     "_exporter_id": "53592097",
     "_collection_link": "https://go.postman.co/collection/30550103-24a19abd-9d51-48fd-9baf-6e104d70100c?source=collection_link"
   },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{apiBearerToken}}",
+        "type": "string"
+      }
+    ]
+  },
   "item": [
     {
       "name": "monitoring_service",
@@ -1206,6 +1216,11 @@
     }
   ],
   "variable": [
+    {
+      "key": "apiBearerToken",
+      "value": "YOUR_API_BEARER_TOKEN",
+      "type": "string"
+    },
     {
       "key": "gatewayProtocol",
       "value": "https",

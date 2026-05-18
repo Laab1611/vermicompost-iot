@@ -246,6 +246,8 @@ services:
     build:
       context: ./api-gateway
     sysctls: *disable-ipv6-sysctls
+    environment:
+      API_BEARER_TOKEN: ${API_BEARER_TOKEN}
     ports:
       - "${NGINX_HTTPS_BIND:-127.0.0.1:8443}:443"
     volumes:

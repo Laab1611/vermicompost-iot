@@ -11,6 +11,12 @@ Plataforma de monitoreo de vermicompostaje con arquitectura de microservicios, m
 - prometheus: interno en 9090
 - grafana: https://localhost:8443/grafana/
 
+## Seguridad de API
+
+- `telemetry`, `query` y `twins` requieren `Authorization: Bearer <token>`.
+- Define `API_BEARER_TOKEN` en `.env` antes de levantar la pila.
+- `health` sigue público para monitoreo.
+
 ## Enrutamiento por Nginx
 
 - /telemetry/* -> telemetry-ingestion-service
@@ -56,7 +62,7 @@ curl -k https://localhost:8443/twins/health
 
 ## Flujo del proyecto
 
-1. Dispositivos IoT o clientes externos envían lecturas al gateway en /telemetry/api/v1/ingestion.
+1. Dispositivos IoT o clientes externos envían lecturas al gateway en /telemetry/api/v1/ingestion con `Authorization: Bearer <token>`.
 2. Nginx enruta la solicitud al telemetry-ingestion-service.
 3. telemetry-ingestion-service valida reglas de dominio y clasifica invalidez automática en ingesta.
 4. Si la lectura es aceptada, se actualiza ultima_lectura_recibida del nodo correspondiente.
@@ -69,7 +75,7 @@ curl -k https://localhost:8443/twins/health
 
 ## Levantar proyecto
 
-1. Configura .env con DATABASE_URL.
+1. Configura `.env` con `DATABASE_URL` y `API_BEARER_TOKEN`.
 2. Construye y levanta. Compose provisiona el certificado local en `.certs/` automáticamente:
 
 ```bash

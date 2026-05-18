@@ -1,0 +1,73 @@
+map $http_authorization $api_bearer_ok {
+    default 0;
+    "Bearer ${API_BEARER_TOKEN}" 1;
+}
+
+server {
+    listen 443 ssl;
+    server_name _;
+
+    ssl_certificate /etc/nginx/certs/localhost.crt;
+    ssl_certificate_key /etc/nginx/certs/localhost.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    server_tokens off;
+
+    proxy_http_version 1.1;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Host $http_host;
+    proxy_set_header X-Forwarded-Proto https;
+
+    location = / {
+        return 302 https://$http_host/grafana/;
+    }
+
+    location = /telemetry/health {
+        proxy_pass http://telemetry-ingestion-service:8000/health;
+    }
+
+    location /telemetry/ {
+        if ($api_bearer_ok = 0) {
+            return 401;
+        }
+        proxy_set_header Authorization "";
+        proxy_pass http://telemetry-ingestion-service:8000/;
+    }
+
+    location = /query/health {
+        proxy_pass http://query-monitoring-service:8000/health;
+    }
+
+    location /query/ {
+        if ($api_bearer_ok = 0) {
+            return 401;
+        }
+        proxy_set_header Authorization "";
+        proxy_pass http://query-monitoring-service:8000/;
+    }
+
+    location = /twins/health {
+        proxy_pass http://digital-twin-integration-service:8000/health;
+    }
+
+    location /twins/ {
+        if ($api_bearer_ok = 0) {
+            return 401;
+        }
+        proxy_set_header Authorization "";
+        proxy_pass http://digital-twin-integration-service:8000/;
+    }
+
+    location /grafana/ {
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Host $http_host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_pass http://grafana:3000;
+    }
+}
