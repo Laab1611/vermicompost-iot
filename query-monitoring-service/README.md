@@ -1,11 +1,11 @@
-# Query Monitoring Service
+# Servicio de Consulta y Monitoreo
 
-Servicio de lectura analitica/operativa sobre el modelo DER.
+Servicio de lectura analítica y operativa sobre el modelo DER.
 
 Puerto local: interno en 8000
-Base URL por gateway: https://localhost:8443/query
+URL base por gateway: https://localhost:8443/query
 
-## Endpoints
+## Puntos de acceso
 
 - GET /health
 - GET /api/v1/camas
@@ -25,22 +25,22 @@ Base URL por gateway: https://localhost:8443/query
 
 - limit: 1..1000
 - minutes: 1..43200
-- start <= end en historico por rango
+- start <= end en histórico por rango
 
 ## Errores HTTP esperados
 
-- 400: parametro invalido (limit, minutes, rango de fechas)
+- 400: parámetro inválido (limit, minutes, rango de fechas)
 - 404: nodo/cama/tipo no existe
 - 500: error de persistencia
 
-## Nota sobre lecturas invalidas
+## Nota sobre lecturas inválidas
 
 - GET /api/v1/lecturas/invalidas consulta lectura_invalida.
-- Devuelve invalidas con trazabilidad aun cuando nodo_id o tipo_variable_id sean NULL.
+- Devuelve inválidas con trazabilidad aun cuando nodo_id o tipo_variable_id sean NULL.
 - El campo motivo_invalidacion corresponde a lectura_invalida.tipo_error.
-- lecturas historicas validas siguen saliendo de lectura.
+- lecturas históricas válidas siguen saliendo de lectura.
 
-## Curl de validacion
+## Curl de validación
 
 ### Casos exitosos
 
@@ -60,10 +60,10 @@ curl -k "https://localhost:8443/query/api/v1/nodos/desconectados?minutes=15"
 ### Casos de error controlado
 
 ```bash
-# limit invalido -> 422 por validacion de FastAPI
+# limit inválido -> 422 por validación de FastAPI
 curl -k "https://localhost:8443/query/api/v1/lecturas/historico/nodo/1?limit=0"
 
-# rango invalido -> 400
+# rango inválido -> 400
 curl -k "https://localhost:8443/query/api/v1/lecturas/historico/rango-tiempo?start=2026-03-21T00:00:00Z&end=2026-03-20T00:00:00Z&limit=100"
 
 # nodo no existe -> 404
@@ -77,4 +77,4 @@ python -m pytest query-monitoring-service/tests
 python -m compileall app
 ```
 
-La suite incluye casos positivos y negativos para historicos, lecturas invalidas, estado de nodos y resumen global.
+La suite incluye casos positivos y negativos para históricos, lecturas inválidas, estado de nodos y resumen global.

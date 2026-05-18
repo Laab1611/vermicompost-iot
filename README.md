@@ -1,4 +1,4 @@
-# Vermicompost IoT Platform
+# Plataforma IoT de Vermicompostaje
 
 Plataforma de monitoreo de vermicompostaje con arquitectura de microservicios, modelo DER en PostgreSQL, gateway Nginx y observabilidad con Prometheus/Grafana.
 
@@ -40,7 +40,7 @@ curl -k https://localhost:8443/twins/health
 - Ingesta de lecturas.
 - Validaciones de dominio y fechas.
 - Persistencia de datos maestros y lecturas.
-- Actualizacion de ultima_lectura_recibida por nodo.
+- Actualización de ultima_lectura_recibida por nodo.
 
 ### query-monitoring-service
 
@@ -56,16 +56,16 @@ curl -k https://localhost:8443/twins/health
 
 ## Flujo del proyecto
 
-1. Dispositivos IoT o clientes externos envian lecturas al gateway en /telemetry/api/v1/ingestion.
+1. Dispositivos IoT o clientes externos envían lecturas al gateway en /telemetry/api/v1/ingestion.
 2. Nginx enruta la solicitud al telemetry-ingestion-service.
-3. telemetry-ingestion-service valida reglas de dominio y clasifica invalidez automatica en ingestion.
+3. telemetry-ingestion-service valida reglas de dominio y clasifica invalidez automática en ingesta.
 4. Si la lectura es aceptada, se actualiza ultima_lectura_recibida del nodo correspondiente.
-5. Toda lectura invalida se persiste en lectura_invalida con trazabilidad completa y datos crudos.
-6. La clasificacion de error en ingestion incluye: timestamp_invalido, nodo_no_registrado, tipo_variable_no_soportado, payload_incompleto, valor_fuera_de_rango y error_desconocido.
-7. query-monitoring-service consulta PostgreSQL para historicos, estados, lecturas invalidas (desde lectura_invalida) y nodos desconectados, expuestos por /query/.
+5. Toda lectura inválida se persiste en lectura_invalida con trazabilidad completa y datos crudos.
+6. La clasificación de error en ingesta incluye: timestamp_invalido, nodo_no_registrado, tipo_variable_no_soportado, payload_incompleto, valor_fuera_de_rango y error_desconocido.
+7. query-monitoring-service consulta PostgreSQL para históricos, estados, lecturas inválidas (desde lectura_invalida) y nodos desconectados, expuestos por /query/.
 8. digital-twin-integration-service consulta PostgreSQL para construir vistas de gemelo digital por nodo, por cama y globales, expuestas por /twins/.
-9. Prometheus recolecta metricas de los servicios para observabilidad.
-10. Grafana consume esas metricas para dashboards y seguimiento operativo.
+9. Prometheus recolecta métricas de los servicios para observabilidad.
+10. Grafana consume esas métricas para dashboards y seguimiento operativo.
 
 ## Levantar proyecto
 
@@ -105,7 +105,7 @@ Después de `docker compose up --build -d`, validar:
 4. Provisioning automático de Grafana:
 	- Ingresar a `https://localhost:8443/grafana/`.
 	- Verificar datasource `Prometheus` aprovisionado automáticamente.
-	- Verificar dashboard `Vermicompost IoT - Observabilidad Backend` en carpeta `Observabilidad`.
+   - Verificar el tablero `Vermicompost IoT - Observabilidad del Backend` en la carpeta `Observabilidad`.
 5. Métricas nuevas de backend visibles:
 	- Validar series `ingestion_broker_enqueue_total`, `ingestion_broker_processed_total`, `ingestion_broker_process_seconds`, `ingestion_redis_stream_length`, `ingestion_redis_pending_messages`, `ingestion_redis_consumer_lag`, `ingestion_batch_buffer_size`.
 6. SLO de latencia:
@@ -122,29 +122,34 @@ python -m compileall telemetry-ingestion-service query-monitoring-service digita
 
 Hay pruebas unitarias dedicadas para los tres servicios.
 
+## Pruebas de API
+
+- Colección de Postman: `postman/vermicomposting.postman_collection.json`
+- Usa `https://localhost:8443` y desactiva la verificación SSL local o importa `.certs/localhost.crt`.
+
 ## Escalabilidad con broker
 
-El servicio de ingestion soporta dos modos configurables por entorno:
+El servicio de ingesta soporta dos modos configurables por entorno:
 
-- `INGESTION_MODE=sync`: modo historico (request procesa y persiste en la misma llamada).
-- `INGESTION_MODE=broker`: modo desacoplado (request encola mensaje y consumidor persiste asincrono).
+- `INGESTION_MODE=sync`: modo histórico (request procesa y persiste en la misma llamada).
+- `INGESTION_MODE=broker`: modo desacoplado (request encola mensaje y consumidor persiste asíncrono).
 
 Proveedor de broker configurable:
 
-- `BROKER_PROVIDER=redis` como opcion recomendada para entorno limitado.
+- `BROKER_PROVIDER=redis` como opción recomendada para entorno limitado.
 - `BROKER_PROVIDER=memory` para pruebas locales sin infraestructura externa.
-<!-- - `BROKER_PROVIDER=rabbitmq` para integracion con RabbitMQ. -->
+<!-- - `BROKER_PROVIDER=rabbitmq` para integración con RabbitMQ. -->
 
 Controles de batch en modo broker:
 
 - `BROKER_BATCH_SIZE=100`
 - `BROKER_FLUSH_SECONDS=1.0`
 
-Referencia tecnica completa:
+Referencia técnica completa:
 
 - `docs/broker-escalabilidad-analisis.md`
 
-## Documentacion por servicio
+## Documentación por servicio
 
 - telemetry-ingestion-service/README.md
 - query-monitoring-service/README.md

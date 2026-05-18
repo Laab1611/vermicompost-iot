@@ -1,0 +1,1225 @@
+{
+  "info": {
+    "_postman_id": "24a19abd-9d51-48fd-9baf-6e104d70100c",
+    "name": "vermicomposting",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "53592097",
+    "_collection_link": "https://go.postman.co/collection/30550103-24a19abd-9d51-48fd-9baf-6e104d70100c?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "monitoring_service",
+      "item": [
+        {
+          "name": "monitoring_summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/query/api/v1/monitoring/summary",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "query",
+                "api",
+                "v1",
+                "monitoring",
+                "summary"
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "monitoring_health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/query/health",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "query",
+                "health"
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "lecturas_invalidas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/query/api/v1/lecturas/invalidas?limit=100",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "query",
+                "api",
+                "v1",
+                "lecturas",
+                "invalidas"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "nodos_desconectados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/query/api/v1/nodos/desconectados?minutes=60",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "query",
+                "api",
+                "v1",
+                "nodos",
+                "desconectados"
+              ],
+              "query": [
+                {
+                  "key": "minutes",
+                  "value": "60"
+                }
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "estado_cama",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/query/api/v1/estado/cama/4",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "query",
+                "api",
+                "v1",
+                "estado",
+                "cama",
+                "4"
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "estado_nodo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/query/api/v1/estado/nodo/1",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "query",
+                "api",
+                "v1",
+                "estado",
+                "nodo",
+                "1"
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "historico_by_period_time",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/query/api/v1/lecturas/historico/rango-tiempo?start=2024-01-20T00:00:00Z&end=2025-01-20T23:59:59Z&limit=100",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "query",
+                "api",
+                "v1",
+                "lecturas",
+                "historico",
+                "rango-tiempo"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2024-01-20T00:00:00Z"
+                },
+                {
+                  "key": "end",
+                  "value": "2025-01-20T23:59:59Z"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "historico_by_variable",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/query/api/v1/lecturas/historico/tipo-variable/1?limit=50",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "query",
+                "api",
+                "v1",
+                "lecturas",
+                "historico",
+                "tipo-variable",
+                "1"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "historico_by_cama",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/query/api/v1/lecturas/historico/cama/1?limit=50",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "query",
+                "api",
+                "v1",
+                "lecturas",
+                "historico",
+                "cama",
+                "1"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "historico_by_nodo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/query/api/v1/lecturas/historico/nodo/1?limit=50",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "query",
+                "api",
+                "v1",
+                "lecturas",
+                "historico",
+                "nodo",
+                "1"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "digital-twin_service",
+      "item": [
+        {
+          "name": "digital-twin_health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/twins/health",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "twins",
+                "health"
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "digital-twin_overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/twins/api/v1/twins/overview",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "twins",
+                "api",
+                "v1",
+                "twins",
+                "overview"
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "camas&nodos_state",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/twins/api/v1/twins",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "twins",
+                "api",
+                "v1",
+                "twins"
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "camas_state_byID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/twins/api/v1/twins/camas/2",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "twins",
+                "api",
+                "v1",
+                "twins",
+                "camas",
+                "2"
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "nodos_state_byID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/twins/api/v1/twins/nodos/1",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "twins",
+                "api",
+                "v1",
+                "twins",
+                "nodos",
+                "1"
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "telemetry_service",
+      "item": [
+        {
+          "name": "Camas",
+          "item": [
+            {
+              "name": "create_cama",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"nombre\": \"Cama 6\",\n    \"ubicacion\": \"Zona Norte\",\n    \"latitud\": 4.6097,\n    \"longitud\": -74.0817\n  }",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/camas",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "camas"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "listar_camas",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/camas",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "camas"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "listar_cama_byID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/camas/4",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "camas",
+                    "4"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "update_cama",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"nombre\": \"Cama 1 Actualizada\",\n    \"ubicacion\": \"Zona Norte - Sector B\",\n    \"latitud\": 4.6097,\n    \"longitud\": -74.0817\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/camas/1",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "camas",
+                    "1"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "delete_cama",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/camas/9",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "camas",
+                    "9"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Nodos",
+          "item": [
+            {
+              "name": "create_nodo_incompleto",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"cama_id\": 4,\n    \"codigo_nodo\": \"NODO-005\"\n  }",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/nodos",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "nodos"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "listar_nodos",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/nodos",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "nodos"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "listar_nodo_byID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/nodos/4",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "nodos",
+                    "4"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "update_nodo",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"cama_id\": 1,\n    \"codigo_nodo\": \"NODO-001-A\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/nodos/1",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "nodos",
+                    "1"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "delete_nodo",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/nodos/8",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "nodos",
+                    "8"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Lecturas",
+          "item": [
+            {
+              "name": "create_lectura",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"nodo_id\": 1,\n    \"tipo_variable_id\": 12,\n    \"valor\": 27.8,\n    \"fecha_medicion\": \"2026-03-20T15:00:00Z\"\n  }",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/ingestion",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "ingestion"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "listar_lecturas",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/lecturas",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "lecturas"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "listar_lectura_byID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/lecturas/10282",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "lecturas",
+                    "10282"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "update_lectura",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"nodo_id\": 1,\n    \"tipo_variable_id\": 1,\n    \"valor\": 28.1,\n    \"fecha_medicion\": \"2026-03-20T15:00:00Z\",\n    \"fecha_recepcion\": \"2026-03-20T15:00:05Z\",\n    \"es_valida\": true,\n    \"motivo_invalidacion\": null\n  }",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/lecturas/1",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "lecturas",
+                    "1"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "delete_lectura",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/lecturas/29",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "lecturas",
+                    "29"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Tipo_Variable",
+          "item": [
+            {
+              "name": "create_tipo_variable",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"nombre\": \"Temperatura ambiental1\",\n    \"unidad_medida\": \"degC\"\n  }",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/tipos-variable",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "tipos-variable"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "listar_variables",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/tipos-variable",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "tipos-variable"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "listar_variable_byID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/tipos-variable/1",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "tipos-variable",
+                    "1"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "update_variable",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"nombre\": \"Temperatura ambiental-updt\",\n    \"unidad_medida\": \"degC\"\n  }",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/tipos-variable/4",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "tipos-variable",
+                    "4"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "delete_variable",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/tipos-variable/4",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "tipos-variable",
+                    "4"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Invalid_cases",
+          "item": [
+            {
+              "name": "nodo_no_existe",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"nodo_id\":9999,\r\n    \"tipo_variable_id\":1,\r\n    \"valor\":27.8,\r\n    \"fecha_medicion\":\"2026-03-20T15:00:00Z\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/ingestion",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "ingestion"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "fecha_medicion_futura",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"nodo_id\":1,\r\n    \"tipo_variable_id\":1,\r\n    \"valor\":27.8,\r\n    \"fecha_medicion\":\"2099-01-01T00:00:00Z\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/ingestion",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "ingestion"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "incongruencia_fecha",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"nodo_id\":1,\r\n    \"tipo_variable_id\":1,\r\n    \"valor\":27.8,\r\n    \"fecha_medicion\":\"2026-03-20T15:00:00Z\",\r\n    \"fecha_recepcion\":\"2026-03-20T14:59:59Z\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/ingestion",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "ingestion"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "variable_no_existe",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"nodo_id\":1,\r\n    \"tipo_variable_id\":999999,\r\n    \"valor\":27.8,\r\n    \"fecha_medicion\":\"2026-03-20T15:00:00Z\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/ingestion",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "ingestion"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "payload_incompleto",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"nodo_id\":1\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/api/v1/ingestion",
+                  "protocol": "{{gatewayProtocol}}",
+                  "host": [
+                    "{{gatewayHost}}"
+                  ],
+                  "path": [
+                    "telemetry",
+                    "api",
+                    "v1",
+                    "ingestion"
+                  ],
+                  "port": "{{gatewayPort}}"
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "telemetry_service_health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gatewayProtocol}}://{{gatewayHost}}:{{gatewayPort}}/telemetry/health",
+              "protocol": "{{gatewayProtocol}}",
+              "host": [
+                "{{gatewayHost}}"
+              ],
+              "path": [
+                "telemetry",
+                "health"
+              ],
+              "port": "{{gatewayPort}}"
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "gatewayProtocol",
+      "value": "https",
+      "type": "string"
+    },
+    {
+      "key": "gatewayHost",
+      "value": "localhost",
+      "type": "string"
+    },
+    {
+      "key": "gatewayPort",
+      "value": "8443",
+      "type": "string"
+    }
+  ]
+}
