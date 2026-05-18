@@ -31,8 +31,8 @@ The database entity-relationship diagram should also be asked directly from the 
 
 ## Canonical Commands
 
-- Full stack: `docker compose up --build -d`
-- Gateway smoke checks: `curl http://localhost:8080/telemetry/health`, `curl http://localhost:8080/query/health`, `curl http://localhost:8080/twins/health`
+- Full stack: `sh scripts/generate-local-cert.sh`, then `docker compose up --build -d`
+- Gateway smoke checks: `curl -k https://localhost:8443/telemetry/health`, `curl -k https://localhost:8443/query/health`, `curl -k https://localhost:8443/twins/health`
 - Run one app locally, from that service directory: `uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log`
 - Run the ingestion worker locally, from `telemetry-ingestion-service/`: `python -m app.worker`
 - Run focused tests, from a service directory: `python -m pytest tests/test_<file>.py -k <expr>`

@@ -2,8 +2,8 @@
 
 Servicio de escritura del dominio. Gestiona datos maestros (camas, nodos, tipos de variable) y lecturas de telemetria.
 
-Puerto local: 8001
-Base URL por gateway: http://localhost/telemetry
+Puerto local: interno en 8000
+Base URL por gateway: https://localhost:8443/telemetry
 
 ## Endpoints
 
@@ -96,31 +96,31 @@ Comportamiento:
 ### Salud
 
 ```bash
-curl http://localhost/telemetry/health
+curl -k https://localhost:8443/telemetry/health
 ```
 
 ### Flujo base (datos maestros + ingesta valida)
 
 ```bash
-curl -X POST http://localhost/telemetry/api/v1/camas \
+curl -k -X POST https://localhost:8443/telemetry/api/v1/camas \
   -H "Content-Type: application/json" \
   -d '{"nombre":"Cama 1","ubicacion":"Zona Norte","latitud":4.6097,"longitud":-74.0817}'
 ```
 
 ```bash
-curl -X POST http://localhost/telemetry/api/v1/nodos \
+curl -k -X POST https://localhost:8443/telemetry/api/v1/nodos \
   -H "Content-Type: application/json" \
   -d '{"cama_id":1,"codigo_nodo":"NODO-001"}'
 ```
 
 ```bash
-curl -X POST http://localhost/telemetry/api/v1/tipos-variable \
+curl -k -X POST https://localhost:8443/telemetry/api/v1/tipos-variable \
   -H "Content-Type: application/json" \
   -d '{"nombre":"Temperatura ambiental","unidad_medida":"degC"}'
 ```
 
 ```bash
-curl -X POST http://localhost/telemetry/api/v1/ingestion \
+curl -k -X POST https://localhost:8443/telemetry/api/v1/ingestion \
   -H "Content-Type: application/json" \
   -d '{"nodo_id":1,"tipo_variable_id":1,"valor":27.8,"fecha_medicion":"2026-03-20T15:00:00Z"}'
 ```
@@ -130,7 +130,7 @@ curl -X POST http://localhost/telemetry/api/v1/ingestion \
 1) nodo no existe -> 200 con motivo nodo_no_registrado y persistida=true
 
 ```bash
-curl -X POST http://localhost/telemetry/api/v1/ingestion \
+curl -k -X POST https://localhost:8443/telemetry/api/v1/ingestion \
   -H "Content-Type: application/json" \
   -d '{"nodo_id":9999,"tipo_variable_id":1,"valor":27.8,"fecha_medicion":"2026-03-20T15:00:00Z"}'
 ```
@@ -138,7 +138,7 @@ curl -X POST http://localhost/telemetry/api/v1/ingestion \
 2) fecha_medicion futura -> 200 con motivo timestamp_invalido y persistida=true
 
 ```bash
-curl -X POST http://localhost/telemetry/api/v1/ingestion \
+curl -k -X POST https://localhost:8443/telemetry/api/v1/ingestion \
   -H "Content-Type: application/json" \
   -d '{"nodo_id":1,"tipo_variable_id":1,"valor":27.8,"fecha_medicion":"2099-01-01T00:00:00Z"}'
 ```
@@ -146,7 +146,7 @@ curl -X POST http://localhost/telemetry/api/v1/ingestion \
 3) fecha_recepcion menor que fecha_medicion -> 200 con motivo timestamp_invalido y persistida=true
 
 ```bash
-curl -X POST http://localhost/telemetry/api/v1/ingestion \
+curl -k -X POST https://localhost:8443/telemetry/api/v1/ingestion \
   -H "Content-Type: application/json" \
   -d '{"nodo_id":1,"tipo_variable_id":1,"valor":27.8,"fecha_medicion":"2026-03-20T15:00:00Z","fecha_recepcion":"2026-03-20T14:59:59Z"}'
 ```
@@ -154,7 +154,7 @@ curl -X POST http://localhost/telemetry/api/v1/ingestion \
 4) tipo_variable no existe -> 200 con motivo tipo_variable_no_soportado y persistida=true
 
 ```bash
-curl -X POST http://localhost/telemetry/api/v1/ingestion \
+curl -k -X POST https://localhost:8443/telemetry/api/v1/ingestion \
   -H "Content-Type: application/json" \
   -d '{"nodo_id":1,"tipo_variable_id":999999,"valor":27.8,"fecha_medicion":"2026-03-20T15:00:00Z"}'
 ```
@@ -162,7 +162,7 @@ curl -X POST http://localhost/telemetry/api/v1/ingestion \
 5) payload incompleto -> 200 con motivo payload_incompleto y persistida=true
 
 ```bash
-curl -X POST http://localhost/telemetry/api/v1/ingestion \
+curl -k -X POST https://localhost:8443/telemetry/api/v1/ingestion \
   -H "Content-Type: application/json" \
   -d '{"nodo_id":1}'
 ```
@@ -170,7 +170,7 @@ curl -X POST http://localhost/telemetry/api/v1/ingestion \
 Verificacion de lecturas invalidas (desde query service):
 
 ```bash
-curl "http://localhost/query/api/v1/lecturas/invalidas?limit=50"
+curl -k "https://localhost:8443/query/api/v1/lecturas/invalidas?limit=50"
 ```
 
 Nota: este endpoint muestra invalidas persistidas en lectura_invalida.
@@ -178,7 +178,7 @@ Nota: este endpoint muestra invalidas persistidas en lectura_invalida.
 6) valor no decimal -> 200 con motivo valor_fuera_de_rango y persistida=true
 
 ```bash
-curl -X POST http://localhost/telemetry/api/v1/ingestion \
+curl -k -X POST https://localhost:8443/telemetry/api/v1/ingestion \
   -H "Content-Type: application/json" \
   -d '{"nodo_id":1,"tipo_variable_id":1,"valor":"texto-invalido","fecha_medicion":"2026-03-20T15:00:00Z"}'
 ```
@@ -188,10 +188,10 @@ Nota: este endpoint muestra invalidas persistidas en lectura_invalida.
 ### CRUD rapido
 
 ```bash
-curl http://localhost/telemetry/api/v1/camas
-curl http://localhost/telemetry/api/v1/nodos
-curl http://localhost/telemetry/api/v1/tipos-variable
-curl http://localhost/telemetry/api/v1/lecturas
+curl -k https://localhost:8443/telemetry/api/v1/camas
+curl -k https://localhost:8443/telemetry/api/v1/nodos
+curl -k https://localhost:8443/telemetry/api/v1/tipos-variable
+curl -k https://localhost:8443/telemetry/api/v1/lecturas
 ```
 
 ## Pruebas locales

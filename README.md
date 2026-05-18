@@ -4,12 +4,12 @@ Plataforma de monitoreo de vermicompostaje con arquitectura de microservicios, m
 
 ## Servicios y puertos
 
-- api-gateway: 80
-- telemetry-ingestion-service: 8001
-- query-monitoring-service: 8002
-- digital-twin-integration-service: 8003
-- prometheus: 9090
-- grafana: 3000
+- api-gateway HTTPS: https://localhost:8443
+- telemetry-ingestion-service: interno en 8000
+- query-monitoring-service: interno en 8000
+- digital-twin-integration-service: interno en 8000
+- prometheus: https://localhost:8443/prometheus/
+- grafana: https://localhost:8443/grafana/
 
 ## Enrutamiento por Nginx
 
@@ -20,9 +20,9 @@ Plataforma de monitoreo de vermicompostaje con arquitectura de microservicios, m
 Ejemplos por gateway:
 
 ```bash
-curl http://localhost/telemetry/health
-curl http://localhost/query/health
-curl http://localhost/twins/health
+curl -k https://localhost:8443/telemetry/health
+curl -k https://localhost:8443/query/health
+curl -k https://localhost:8443/twins/health
 ```
 
 ## Modelo de datos (DER)
@@ -70,18 +70,24 @@ curl http://localhost/twins/health
 ## Levantar proyecto
 
 1. Configura .env con DATABASE_URL.
-2. Construye y levanta:
+2. Genera el certificado local autofirmado:
+
+```bash
+sh scripts/generate-local-cert.sh
+```
+
+3. Construye y levanta:
 
 ```bash
 docker compose up --build -d
 ```
 
-3. Smoke test:
+4. Smoke test:
 
 ```bash
-curl http://localhost/telemetry/health
-curl http://localhost/query/health
-curl http://localhost/twins/health
+curl -k https://localhost:8443/telemetry/health
+curl -k https://localhost:8443/query/health
+curl -k https://localhost:8443/twins/health
 ```
 
 ## Checklist de integración de observabilidad
@@ -91,13 +97,13 @@ Después de `docker compose up --build -d`, validar:
 1. Estado de servicios:
 	- `telemetry-ingestion-service`, `query-monitoring-service`, `digital-twin-integration-service`, `prometheus` y `grafana` en estado `healthy`.
 2. Targets en Prometheus:
-	- Abrir `http://localhost:9090/targets`.
+	- Abrir `https://localhost:8443/prometheus/targets`.
 	- Confirmar que están `UP` los jobs: `telemetry-ingestion-service`, `query-monitoring-service`, `digital-twin-integration-service`, `prometheus`, `grafana`.
 3. Reglas de alertas cargadas:
-	- Abrir `http://localhost:9090/rules`.
+	- Abrir `https://localhost:8443/prometheus/rules`.
 	- Confirmar grupos `disponibilidad-servicios`, `rendimiento-api` e `ingestion-broker`.
 4. Provisioning automático de Grafana:
-	- Ingresar a `http://localhost:3000`.
+	- Ingresar a `https://localhost:8443/grafana/`.
 	- Verificar datasource `Prometheus` aprovisionado automáticamente.
 	- Verificar dashboard `Vermicompost IoT - Observabilidad Backend` en carpeta `Observabilidad`.
 5. Métricas nuevas de backend visibles:

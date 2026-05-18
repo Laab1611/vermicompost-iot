@@ -2,8 +2,8 @@
 
 Servicio de lectura para proyeccion de estado de gemelo digital.
 
-Puerto local: 8003
-Base URL por gateway: http://localhost/twins
+Puerto local: interno en 8000
+Base URL por gateway: https://localhost:8443/twins
 
 ## Endpoints
 
@@ -34,24 +34,24 @@ Base URL por gateway: http://localhost/twins
 ### Casos exitosos
 
 ```bash
-curl http://localhost/twins/health
-curl http://localhost/twins/api/v1/twins/overview
-curl "http://localhost/twins/api/v1/twins?readings_limit=200"
-curl "http://localhost/twins/api/v1/twins/camas/1?readings_limit=200"
-curl "http://localhost/twins/api/v1/twins/nodos/1?readings_limit=200"
+curl -k https://localhost:8443/twins/health
+curl -k https://localhost:8443/twins/api/v1/twins/overview
+curl -k "https://localhost:8443/twins/api/v1/twins?readings_limit=200"
+curl -k "https://localhost:8443/twins/api/v1/twins/camas/1?readings_limit=200"
+curl -k "https://localhost:8443/twins/api/v1/twins/nodos/1?readings_limit=200"
 ```
 
 ### Casos de error controlado
 
 ```bash
 # readings_limit invalido -> 422 por validacion de FastAPI
-curl "http://localhost/twins/api/v1/twins?readings_limit=0"
+curl -k "https://localhost:8443/twins/api/v1/twins?readings_limit=0"
 
 # cama no existe -> 404
-curl "http://localhost/twins/api/v1/twins/camas/9999?readings_limit=200"
+curl -k "https://localhost:8443/twins/api/v1/twins/camas/9999?readings_limit=200"
 
 # nodo no existe -> 404
-curl "http://localhost/twins/api/v1/twins/nodos/9999?readings_limit=200"
+curl -k "https://localhost:8443/twins/api/v1/twins/nodos/9999?readings_limit=200"
 ```
 
 ## Pruebas locales

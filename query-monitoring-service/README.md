@@ -2,8 +2,8 @@
 
 Servicio de lectura analitica/operativa sobre el modelo DER.
 
-Puerto local: 8002
-Base URL por gateway: http://localhost/query
+Puerto local: interno en 8000
+Base URL por gateway: https://localhost:8443/query
 
 ## Endpoints
 
@@ -45,29 +45,29 @@ Base URL por gateway: http://localhost/query
 ### Casos exitosos
 
 ```bash
-curl http://localhost/query/health
-curl http://localhost/query/api/v1/monitoring/summary
-curl "http://localhost/query/api/v1/lecturas/historico/nodo/1?limit=50"
-curl "http://localhost/query/api/v1/lecturas/historico/cama/1?limit=50"
-curl "http://localhost/query/api/v1/lecturas/historico/tipo-variable/1?limit=50"
-curl "http://localhost/query/api/v1/lecturas/historico/rango-tiempo?start=2026-03-20T00:00:00Z&end=2026-03-20T23:59:59Z&limit=100"
-curl "http://localhost/query/api/v1/estado/nodo/1?minutes=15"
-curl "http://localhost/query/api/v1/estado/cama/1?minutes=15"
-curl "http://localhost/query/api/v1/lecturas/invalidas?limit=100"
-curl "http://localhost/query/api/v1/nodos/desconectados?minutes=15"
+curl -k https://localhost:8443/query/health
+curl -k https://localhost:8443/query/api/v1/monitoring/summary
+curl -k "https://localhost:8443/query/api/v1/lecturas/historico/nodo/1?limit=50"
+curl -k "https://localhost:8443/query/api/v1/lecturas/historico/cama/1?limit=50"
+curl -k "https://localhost:8443/query/api/v1/lecturas/historico/tipo-variable/1?limit=50"
+curl -k "https://localhost:8443/query/api/v1/lecturas/historico/rango-tiempo?start=2026-03-20T00:00:00Z&end=2026-03-20T23:59:59Z&limit=100"
+curl -k "https://localhost:8443/query/api/v1/estado/nodo/1?minutes=15"
+curl -k "https://localhost:8443/query/api/v1/estado/cama/1?minutes=15"
+curl -k "https://localhost:8443/query/api/v1/lecturas/invalidas?limit=100"
+curl -k "https://localhost:8443/query/api/v1/nodos/desconectados?minutes=15"
 ```
 
 ### Casos de error controlado
 
 ```bash
 # limit invalido -> 422 por validacion de FastAPI
-curl "http://localhost/query/api/v1/lecturas/historico/nodo/1?limit=0"
+curl -k "https://localhost:8443/query/api/v1/lecturas/historico/nodo/1?limit=0"
 
 # rango invalido -> 400
-curl "http://localhost/query/api/v1/lecturas/historico/rango-tiempo?start=2026-03-21T00:00:00Z&end=2026-03-20T00:00:00Z&limit=100"
+curl -k "https://localhost:8443/query/api/v1/lecturas/historico/rango-tiempo?start=2026-03-21T00:00:00Z&end=2026-03-20T00:00:00Z&limit=100"
 
 # nodo no existe -> 404
-curl "http://localhost/query/api/v1/estado/nodo/9999?minutes=15"
+curl -k "https://localhost:8443/query/api/v1/estado/nodo/9999?minutes=15"
 ```
 
 ## Pruebas locales

@@ -11,7 +11,7 @@ SLO funcional para backend en este proyecto:
 ## Arquitectura relevante
 
 Stack de backend y enrutamiento:
-- API Gateway Nginx publica el backend en http://localhost:80
+- API Gateway Nginx publica el backend en https://localhost:8443
 - Telemetry Ingestion: /telemetry
 - Query Monitoring: /query
 - Digital Twin: /twins
