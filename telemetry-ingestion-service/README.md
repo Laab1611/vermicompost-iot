@@ -49,6 +49,18 @@ Variables de entorno:
 <!-- - RABBITMQ_EXCHANGE= -->
 <!-- - RABBITMQ_ROUTING_KEY= -->
 
+## Worker provisional de sincronizacion MySQL -> broker
+
+Este worker lee la tabla legacy de MySQL en modo solo lectura, separa cada fila en tres lecturas normalizadas y publica al broker existente. El worker actual sigue haciendo la validacion, el batch y la persistencia en PostgreSQL.
+
+Variables de entorno:
+
+- MYSQL_URL o, en su defecto, MYSQL_HOST/MYSQL_PORT/MYSQL_USER/MYSQL_PASSWORD/MYSQL_DATABASE
+- MYSQL_TABLE=sensoresiot
+- MYSQL_BATCH_SIZE=100
+- MYSQL_CHECKPOINT_PATH=/var/lib/mysql-sync/checkpoint.json
+
+
 Comportamiento:
 
 - En `sync`, `POST /api/v1/ingestion` mantiene comportamiento histórico.

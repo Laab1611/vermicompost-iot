@@ -136,6 +136,52 @@ services:
       timeout: 5s
       retries: 3
 
+  telemetry-mysql-sync-worker:
+    build:
+      context: ./telemetry-ingestion-service
+    env_file:
+      - .env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      BROKER_PROVIDER: redis
+      BROKER_QUEUE_NAME: ${BROKER_QUEUE_NAME:-telemetry.ingestion}
+      BROKER_PREFETCH_COUNT: ${BROKER_PREFETCH_COUNT:-100}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      REDIS_CONSUMER_GROUP: ${REDIS_CONSUMER_GROUP:-telemetry-ingestion-group}
+      REDIS_CONSUMER_NAME: ${REDIS_CONSUMER_NAME_SYNC:-telemetry-mysql-sync-worker}
+      REDIS_POLL_TIMEOUT_MS: ${REDIS_POLL_TIMEOUT_MS:-1000}
+      MYSQL_URL: ${MYSQL_URL:-}
+      MYSQL_HOST: ${MYSQL_HOST:-mysql}
+      MYSQL_PORT: ${MYSQL_PORT:-3306}
+      MYSQL_USER: ${MYSQL_USER:-}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-}
+      MYSQL_TABLE: ${MYSQL_TABLE:-sensoresiot}
+      MYSQL_BATCH_SIZE: ${MYSQL_BATCH_SIZE:-100}
+      MYSQL_POLL_INTERVAL_SECONDS: ${MYSQL_POLL_INTERVAL_SECONDS:-30}
+      MYSQL_CHECKPOINT_PATH: ${MYSQL_CHECKPOINT_PATH:-/var/lib/mysql-sync/checkpoint.json}
+      MYSQL_NODE_ID_MAP: ${MYSQL_NODE_ID_MAP:-}
+      MYSQL_TEMPERATURE_TYPE_ID: ${MYSQL_TEMPERATURE_TYPE_ID:-0}
+      MYSQL_HUMIDITY_TYPE_ID: ${MYSQL_HUMIDITY_TYPE_ID:-0}
+      MYSQL_PH_TYPE_ID: ${MYSQL_PH_TYPE_ID:-0}
+    command: ["python", "-m", "app.mysql_worker"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - mysql-sync-state:/var/lib/mysql-sync
+    networks:
+      - vermicompost-net
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import os; os.kill(1, 0)\" || exit 1",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   query-monitoring-service:
     build:
       context: ./query-monitoring-service
@@ -276,6 +322,7 @@ services:
 volumes:
   grafana-storage:
   prometheus-data:
+  mysql-sync-state:
 
 networks:
   vermicompost-net:
