@@ -167,6 +167,15 @@ def _invalid_ingestion_response(tipo_error: str) -> dict[str, Any]:
 
 
 def create_cama(db: Session, payload: CamaCreate) -> CamaVermicompostaje:
+    existing = telemetry_repository.get_cama_by_values(
+        db,
+        nombre=payload.nombre,
+        ubicacion=payload.ubicacion,
+        latitud=payload.latitud,
+        longitud=payload.longitud,
+    )
+    if existing:
+        raise ConflictError("cama ya existe")
     cama = CamaVermicompostaje(**payload.model_dump())
     return telemetry_repository.create_cama(db, cama)
 
@@ -184,6 +193,15 @@ def get_cama_or_fail(db: Session, cama_id: int) -> CamaVermicompostaje:
 
 def update_cama(db: Session, cama_id: int, payload: CamaUpdate) -> CamaVermicompostaje:
     cama = get_cama_or_fail(db, cama_id)
+    existing = telemetry_repository.get_cama_by_values(
+        db,
+        nombre=payload.nombre,
+        ubicacion=payload.ubicacion,
+        latitud=payload.latitud,
+        longitud=payload.longitud,
+    )
+    if existing and existing.cama_id != cama_id:
+        raise ConflictError("cama ya existe")
     try:
         for key, value in payload.model_dump().items():
             setattr(cama, key, value)

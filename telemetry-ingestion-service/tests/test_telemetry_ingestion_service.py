@@ -2,6 +2,8 @@ from datetime import UTC, datetime, timedelta
 import pathlib
 import sys
 
+from decimal import Decimal
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -11,9 +13,9 @@ if str(SERVICE_ROOT) not in sys.path:
     sys.path.insert(0, str(SERVICE_ROOT))
 
 from app.database.base import Base
-from app.exceptions import ValidationError
+from app.exceptions import ConflictError, ValidationError
 from app.models.telemetry_model import CamaVermicompostaje, Lectura, LecturaInvalida, NodoSensor, TipoVariable
-from app.schemas.telemetry_schema import LecturaCreate
+from app.schemas.telemetry_schema import CamaCreate, CamaUpdate, LecturaCreate, NodoCreate
 from app.services import telemetry_service
 
 
@@ -171,6 +173,41 @@ def test_ingest_future_measurement_is_timestamp_invalido(db_session, seeded_enti
     assert result["motivo_invalidacion"] == "timestamp_invalido"
     invalid = db_session.query(LecturaInvalida).one()
     assert invalid.tipo_error == "timestamp_invalido"
+
+
+def test_create_cama_rejects_duplicate_payload(db_session):
+    payload = CamaCreate(nombre="Cama 1", ubicacion="Zona Norte")
+
+    first = telemetry_service.create_cama(db_session, payload)
+
+    with pytest.raises(ConflictError):
+        telemetry_service.create_cama(db_session, payload)
+
+    assert first.cama_id is not None
+    assert db_session.query(CamaVermicompostaje).count() == 1
+
+
+def test_update_cama_rejects_duplicate_payload(db_session):
+    cama_a = telemetry_service.create_cama(db_session, CamaCreate(nombre="Cama A", ubicacion="Zona Norte"))
+    cama_b = telemetry_service.create_cama(db_session, CamaCreate(nombre="Cama B", ubicacion="Zona Sur"))
+
+    with pytest.raises(ConflictError):
+        telemetry_service.update_cama(
+            db_session,
+            cama_b.cama_id,
+            CamaUpdate(nombre=cama_a.nombre, ubicacion=cama_a.ubicacion, latitud=cama_a.latitud, longitud=cama_a.longitud),
+        )
+
+    assert db_session.query(CamaVermicompostaje).count() == 2
+
+
+def test_create_nodo_rejects_duplicate_codigo(db_session, seeded_entities):
+    payload = NodoCreate(cama_id=seeded_entities["cama_id"], codigo_nodo="NODO-001")
+
+    with pytest.raises(ConflictError):
+        telemetry_service.create_nodo(db_session, payload)
+
+    assert db_session.query(NodoSensor).count() == 1
 
 
 def test_ingest_reception_before_measurement_is_timestamp_invalido(db_session, seeded_entities):
