@@ -248,6 +248,22 @@ def _resolve_tipo_variable_ids() -> tuple[int, int, int]:
         db.close()
 
 
+def _resolve_tipo_variable_ids_with_retry() -> tuple[int, int, int]:
+    while not _stop_event.is_set():
+        try:
+            return _resolve_tipo_variable_ids()
+        except (RuntimeError, SQLAlchemyError) as exc:
+            logger.warning(
+                "No se pudieron resolver los tipos legacy en PostgreSQL. Reintentando en %.2fs: %s",
+                settings.mysql_poll_interval_seconds,
+                exc,
+            )
+            if _stop_event.wait(settings.mysql_poll_interval_seconds):
+                break
+
+    raise RuntimeError("MySQL sync worker detenido antes de resolver los tipos_variable")
+
+
 def _publish_batch(broker, rows: list[LegacyRow], tipo_ids: tuple[int, int, int]) -> dict[str, Any]:
     temperature_type_id, humidity_type_id, ph_type_id = tipo_ids
     published = 0
@@ -289,7 +305,7 @@ def main() -> None:
 
     mysql_engine = _build_mysql_engine()
     broker = create_broker(settings, logger=logger)
-    tipo_variable_ids = _resolve_tipo_variable_ids()
+    tipo_variable_ids = _resolve_tipo_variable_ids_with_retry()
     checkpoint_path = Path(settings.mysql_checkpoint_path)
     checkpoint = _load_checkpoint(checkpoint_path)
 
