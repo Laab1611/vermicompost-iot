@@ -214,12 +214,12 @@ def update_cama(db: Session, cama_id: int, payload: CamaUpdate) -> CamaVermicomp
 
 
 def delete_cama(db: Session, cama_id: int) -> None:
-    get_cama_or_fail(db, cama_id)
+    cama = get_cama_or_fail(db, cama_id)
+    has_nodes = db.query(NodoSensor.nodo_id).filter(NodoSensor.cama_id == cama.cama_id).first() is not None
+    if has_nodes:
+        raise DependencyError("no se puede eliminar cama con nodos registrados")
     try:
-        telemetry_repository.delete_cama_cascade(db, cama_id)
-    except IntegrityError as exc:
-        db.rollback()
-        raise DependencyError("no se puede eliminar cama con registros relacionados") from exc
+        telemetry_repository.delete_cama(db, cama)
     except SQLAlchemyError as exc:
         db.rollback()
         raise PersistenceError("error al eliminar cama") from exc
@@ -266,12 +266,13 @@ def update_nodo(db: Session, nodo_id: int, payload: NodoUpdate) -> NodoSensor:
 
 
 def delete_nodo(db: Session, nodo_id: int) -> None:
-    get_nodo_or_fail(db, nodo_id)
+    nodo = get_nodo_or_fail(db, nodo_id)
+    has_readings = db.query(Lectura.lectura_id).filter(Lectura.nodo_id == nodo.nodo_id).first() is not None
+    has_invalid_readings = db.query(LecturaInvalida.lectura_invalida_id).filter(LecturaInvalida.nodo_id == nodo.nodo_id).first() is not None
+    if has_readings or has_invalid_readings:
+        raise DependencyError("no se puede eliminar nodo con lecturas registradas")
     try:
-        telemetry_repository.delete_nodo_cascade(db, nodo_id)
-    except IntegrityError as exc:
-        db.rollback()
-        raise DependencyError("no se puede eliminar nodo con registros relacionados") from exc
+        telemetry_repository.delete_nodo(db, nodo)
     except SQLAlchemyError as exc:
         db.rollback()
         raise PersistenceError("error al eliminar nodo") from exc
