@@ -8,7 +8,7 @@ URL base por gateway: https://localhost:8443/query
 ## Puntos de acceso
 
 - GET /health
-- GET /api/v1/camas
+- GET /api/v1/camas?minutes=
 - GET /api/v1/nodos
 - GET /api/v1/tipos-variable
 - GET /api/v1/lecturas/historico/nodo/{nodo_id}?limit=
@@ -26,6 +26,12 @@ URL base por gateway: https://localhost:8443/query
 - limit: 1..1000
 - minutes: 1..43200
 - start <= end en histórico por rango
+
+## Nota sobre GET /api/v1/camas
+
+- La respuesta ahora incluye `nodos` asociados por cama.
+- Cada nodo devuelve solo `nodo_id`, `codigo_nodo` y `conectado`.
+- `minutes` controla la ventana usada para considerar un nodo conectado. El valor por defecto es 15.
 
 ## Errores HTTP esperados
 

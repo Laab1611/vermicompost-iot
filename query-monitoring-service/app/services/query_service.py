@@ -298,6 +298,27 @@ def _latest_readings_by_nodo(db: Session, nodo_id: int) -> dict[str, float]:
     return result
 
 
+def _estado_actual_de_cama(db: Session, cama: CamaVermicompostaje, minutes: int) -> dict:
+    nodos = (
+        db.query(NodoSensor)
+        .filter(NodoSensor.cama_id == cama.cama_id)
+        .order_by(NodoSensor.nodo_id.asc())
+        .all()
+    )
+    return {
+        "cama_id": cama.cama_id,
+        "nombre": cama.nombre,
+        "nodos": [
+            {
+                "nodo_id": estado_nodo["nodo_id"],
+                "codigo_nodo": estado_nodo["codigo_nodo"],
+                "conectado": estado_nodo["conectado"],
+            }
+            for estado_nodo in (get_estado_actual_por_nodo(db, nodo.nodo_id, minutes) for nodo in nodos)
+        ],
+    }
+
+
 def get_estado_actual_por_nodo(db: Session, nodo_id: int, minutes: int = 15) -> dict:
     _validate_minutes(minutes)
     logger.debug("Query get_estado_actual_por_nodo start nodo_id=%s minutes=%s", nodo_id, minutes)
@@ -332,12 +353,7 @@ def get_estado_actual_por_cama(db: Session, cama_id: int, minutes: int = 15) -> 
     logger.debug("Query get_estado_actual_por_cama start cama_id=%s minutes=%s", cama_id, minutes)
     try:
         cama = _get_cama_or_fail(db, cama_id)
-        nodos = db.query(NodoSensor).filter(NodoSensor.cama_id == cama_id).all()
-        result = {
-            "cama_id": cama.cama_id,
-            "nombre": cama.nombre,
-            "nodos": [get_estado_actual_por_nodo(db, nodo.nodo_id, minutes) for nodo in nodos],
-        }
+        result = _estado_actual_de_cama(db, cama, minutes)
         logger.debug(
             "Query get_estado_actual_por_cama completed cama_id=%s nodos=%s",
             cama_id,
@@ -350,6 +366,22 @@ def get_estado_actual_por_cama(db: Session, cama_id: int, minutes: int = 15) -> 
     except SQLAlchemyError as exc:
         logger.exception("Query get_estado_actual_por_cama failed cama_id=%s", cama_id)
         raise PersistenceError("error al consultar estado de cama") from exc
+
+
+def get_all_camas_estado(db: Session, minutes: int = 15) -> list[dict]:
+    _validate_minutes(minutes)
+    logger.debug("Query get_all_camas_estado start minutes=%s", minutes)
+    try:
+        camas = db.query(CamaVermicompostaje).order_by(CamaVermicompostaje.cama_id.asc()).all()
+        result = [_estado_actual_de_cama(db, cama, minutes) for cama in camas]
+        logger.debug("Query get_all_camas_estado completed camas=%s", len(result))
+        return result
+    except (ValidationError, PersistenceError):
+        logger.warning("Query get_all_camas_estado validation/persistence error")
+        raise
+    except SQLAlchemyError as exc:
+        logger.exception("Query get_all_camas_estado failed")
+        raise PersistenceError("error al consultar estados de camas") from exc
 
 
 def get_monitoring_summary(db: Session, disconnect_minutes: int = 15) -> dict:

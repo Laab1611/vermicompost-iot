@@ -12,6 +12,7 @@ import threading
 import time
 from pathlib import Path
 from typing import Any
+import unicodedata
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
@@ -48,6 +49,12 @@ def _setup_logging() -> None:
 
 def _is_safe_identifier(value: str) -> bool:
     return bool(_IDENTIFIER_PATTERN.fullmatch(value))
+
+
+def _normalize_tipo_variable_name(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value)
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+    return re.sub(r"\s+", " ", normalized).strip().casefold()
 
 
 def _parse_datetime(value: Any) -> datetime:
@@ -87,18 +94,16 @@ def _resolve_tipo_variable_id(session: Session, nombre: str, configured_id: int)
     if configured_id > 0:
         return configured_id
 
-    tipo = session.query(TipoVariable).filter(TipoVariable.nombre == nombre).first()
-    if tipo:
-        return tipo.tipo_variable_id
+    target = _normalize_tipo_variable_name(nombre)
+    candidates = {
+        "temperatura ambiental": {"temperatura ambiental", "temperatura"},
+        "humedad relativa": {"humedad relativa", "humedad"},
+        "ph": {"ph"},
+    }.get(target, {target})
 
-    tipo_aliases = {
-        "Temperatura ambiental": ["Temperatura", "temperatura"],
-        "Humedad relativa": ["Humedad", "humedad"],
-        "pH": ["PH", "ph"],
-    }
-    for alias in tipo_aliases.get(nombre, []):
-        tipo = session.query(TipoVariable).filter(TipoVariable.nombre == alias).first()
-        if tipo:
+    tipos = session.query(TipoVariable).all()
+    for tipo in tipos:
+        if _normalize_tipo_variable_name(tipo.nombre) in candidates:
             return tipo.tipo_variable_id
 
     raise RuntimeError(f"No se encontro tipo_variable para {nombre!r}")

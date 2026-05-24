@@ -57,10 +57,22 @@ class NodoEstado(BaseModel):
     lecturas_actuales: dict[str, Optional[Decimal]]
 
 
+class NodoEstadoResumen(BaseModel):
+    nodo_id: int
+    codigo_nodo: str
+    conectado: bool
+
+
 class CamaEstado(BaseModel):
     cama_id: int
     nombre: str
     nodos: list[NodoEstado]
+
+
+class CamaEstadoResumen(BaseModel):
+    cama_id: int
+    nombre: str
+    nodos: list[NodoEstadoResumen]
 
 
 class MonitoringSummary(BaseModel):
