@@ -8,8 +8,14 @@ Plataforma de monitoreo de vermicompostaje con arquitectura de microservicios, m
 - telemetry-ingestion-service: interno en 8000
 - query-monitoring-service: interno en 8000
 - digital-twin-integration-service: interno en 8000
-- prometheus: https://localhost:8443/prometheus/
+- prometheus: interno en 9090
 - grafana: https://localhost:8443/grafana/
+
+## Seguridad de API
+
+- `telemetry`, `query` y `twins` requieren `Authorization: Bearer <token>`.
+- Define `API_BEARER_TOKEN` en `.env` antes de levantar la pila.
+- `health` sigue público para monitoreo.
 
 ## Enrutamiento por Nginx
 
@@ -56,7 +62,7 @@ curl -k https://localhost:8443/twins/health
 
 ## Flujo del proyecto
 
-1. Dispositivos IoT o clientes externos envían lecturas al gateway en /telemetry/api/v1/ingestion.
+1. Dispositivos IoT o clientes externos envían lecturas al gateway en /telemetry/api/v1/ingestion con `Authorization: Bearer <token>`.
 2. Nginx enruta la solicitud al telemetry-ingestion-service.
 3. telemetry-ingestion-service valida reglas de dominio y clasifica invalidez automática en ingesta.
 4. Si la lectura es aceptada, se actualiza ultima_lectura_recibida del nodo correspondiente.
@@ -69,8 +75,8 @@ curl -k https://localhost:8443/twins/health
 
 ## Levantar proyecto
 
-1. Configura .env con DATABASE_URL.
-2. Construye y levanta con el mismo archivo. Compose provisiona el certificado local en `.certs/` automáticamente:
+1. Configura `.env` con `DATABASE_URL` y `API_BEARER_TOKEN`.
+2. Construye y levanta. Compose provisiona el certificado local en `.certs/` automáticamente:
 
 ```bash
 docker compose up --build -d
@@ -97,12 +103,12 @@ Después de levantar el stack, validar:
 
 1. Estado de servicios:
 	- `telemetry-ingestion-service`, `query-monitoring-service`, `digital-twin-integration-service`, `prometheus` y `grafana` en estado `healthy`.
-2. Targets en Prometheus:
-	- Abrir `https://localhost:8443/prometheus/targets`.
-	- Confirmar que están `UP` los jobs: `telemetry-ingestion-service`, `query-monitoring-service`, `digital-twin-integration-service`, `prometheus`, `grafana`.
+2. Prometheus interno:
+	- Confirmar el contenedor `prometheus` en estado `healthy`.
+	- Verificar desde Grafana que el datasource `Prometheus` está aprovisionado y que los dashboards cargan métricas.
 3. Reglas de alertas cargadas:
-	- Abrir `https://localhost:8443/prometheus/rules`.
-	- Confirmar grupos `disponibilidad-servicios`, `rendimiento-api` e `ingestion-broker`.
+	- Confirmar en los logs de Prometheus que los grupos `disponibilidad-servicios`, `rendimiento-api` e `ingestion-broker` cargan sin errores.
+	- El UI de Prometheus no se expone públicamente.
 4. Provisioning automático de Grafana:
 	- Ingresar a `https://localhost:8443/grafana/`.
 	- Verificar datasource `Prometheus` aprovisionado automáticamente.
