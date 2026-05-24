@@ -7,7 +7,7 @@ from app.database.connection import get_db
 from app.exceptions import NotFoundError, PersistenceError, ValidationError
 from app.schemas.query_schema import (
     CamaEstado,
-    CamaResponse,
+    CamaEstadoResumen,
     LecturaDetalle,
     MonitoringSummary,
     NodoEstado,
@@ -44,10 +44,13 @@ def health():
     return {"status": "ok", "service": "query-monitoring-service"}
 
 
-@router.get("/api/v1/camas", response_model=list[CamaResponse])
-def get_camas(db: Session = Depends(get_db)):
+@router.get("/api/v1/camas", response_model=list[CamaEstadoResumen])
+def get_camas(
+    minutes: int = Query(15, ge=1, le=43200),
+    db: Session = Depends(get_db),
+):
     try:
-        return query_service.list_camas(db)
+        return query_service.get_all_camas_estado(db, minutes)
     except PersistenceError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 

@@ -22,6 +22,29 @@ def get_cama(db: Session, cama_id: int) -> Optional[CamaVermicompostaje]:
 	return db.query(CamaVermicompostaje).filter(CamaVermicompostaje.cama_id == cama_id).first()
 
 
+def get_cama_by_values(
+	db: Session,
+	*,
+	nombre: str,
+	ubicacion: str,
+	latitud: Optional[Any],
+	longitud: Optional[Any],
+) -> Optional[CamaVermicompostaje]:
+	query = db.query(CamaVermicompostaje).filter(
+		CamaVermicompostaje.nombre == nombre,
+		CamaVermicompostaje.ubicacion == ubicacion,
+	)
+	if latitud is None:
+		query = query.filter(CamaVermicompostaje.latitud.is_(None))
+	else:
+		query = query.filter(CamaVermicompostaje.latitud == latitud)
+	if longitud is None:
+		query = query.filter(CamaVermicompostaje.longitud.is_(None))
+	else:
+		query = query.filter(CamaVermicompostaje.longitud == longitud)
+	return query.first()
+
+
 def delete_cama(db: Session, cama: CamaVermicompostaje) -> None:
 	db.delete(cama)
 	db.commit()

@@ -3,13 +3,17 @@ import pathlib
 import sys
 
 import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker
 
 SERVICE_ROOT = pathlib.Path(__file__).resolve().parents[1]
 if str(SERVICE_ROOT) not in sys.path:
     sys.path.insert(0, str(SERVICE_ROOT))
 
+from app.api.routes import get_db as routes_get_db, router
 from app.database.base import Base
 from app.exceptions import NotFoundError, ValidationError
 from app.models.query_model import CamaVermicompostaje, Lectura, LecturaInvalida, NodoSensor, TipoVariable
@@ -18,7 +22,12 @@ from app.services import query_service
 
 @pytest.fixture()
 def db_session():
-    engine = create_engine("sqlite+pysqlite:///:memory:", future=True)
+    engine = create_engine(
+        "sqlite+pysqlite:///:memory:",
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     Base.metadata.create_all(bind=engine)
     SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
     session = SessionLocal()
@@ -184,3 +193,47 @@ def test_get_latest_sensor_averages_by_cama_groups_domain_metrics(db_session, se
     assert cama_2["temperatura"] is None
     assert cama_2["humedad"] is None
     assert cama_2["ph"] == pytest.approx(7.1)
+
+
+
+@pytest.fixture()
+def api_client(db_session):
+    app = FastAPI()
+    app.include_router(router)
+    app.dependency_overrides[routes_get_db] = lambda: db_session
+
+    with TestClient(app) as client:
+        yield client
+
+
+def test_get_all_camas_estado_includes_associated_nodes(db_session, seeded_data):
+    estados = query_service.get_all_camas_estado(db_session, minutes=15)
+
+    assert len(estados) == 2
+
+    by_cama = {item["cama_id"]: item for item in estados}
+
+    cama1 = by_cama[seeded_data["cama1_id"]]
+    assert len(cama1["nodos"]) == 1
+    assert cama1["nodos"][0]["nodo_id"] == seeded_data["nodo1_id"]
+    assert cama1["nodos"][0]["codigo_nodo"] == "NODO-001"
+    assert set(cama1["nodos"][0].keys()) == {"nodo_id", "codigo_nodo", "conectado"}
+
+    cama2 = by_cama[seeded_data["cama2_id"]]
+    assert len(cama2["nodos"]) == 1
+    assert cama2["nodos"][0]["nodo_id"] == seeded_data["nodo2_id"]
+    assert cama2["nodos"][0]["conectado"] is False
+    assert set(cama2["nodos"][0].keys()) == {"nodo_id", "codigo_nodo", "conectado"}
+
+
+def test_get_camas_endpoint_returns_nodes_associated(api_client, seeded_data):
+    response = api_client.get("/api/v1/camas?minutes=15")
+
+    assert response.status_code == 200
+    estados = response.json()
+    assert len(estados) == 2
+
+    cama1 = next(item for item in estados if item["cama_id"] == seeded_data["cama1_id"])
+    assert cama1["nodos"][0]["nodo_id"] == seeded_data["nodo1_id"]
+    assert cama1["nodos"][0]["codigo_nodo"] == "NODO-001"
+    assert set(cama1["nodos"][0].keys()) == {"nodo_id", "codigo_nodo", "conectado"}

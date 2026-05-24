@@ -42,6 +42,8 @@ def create_cama(payload: CamaCreate, db: Session = Depends(get_db)):
         return telemetry_service.create_cama(db, payload)
     except ValidationError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except PersistenceError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -67,6 +69,8 @@ def update_cama(cama_id: int, payload: CamaUpdate, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValidationError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     except PersistenceError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 

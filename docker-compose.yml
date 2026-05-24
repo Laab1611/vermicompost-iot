@@ -11,7 +11,7 @@ services:
     environment:
       CERT_SUBJECT_ALT_NAME: ${CERT_SUBJECT_ALT_NAME:-DNS:localhost,IP:127.0.0.1}
     volumes:
-      - ./.certs:/certs
+      - ./.certs:/certs:z
     healthcheck:
       test:
         [
@@ -51,8 +51,8 @@ services:
       GF_PLUGINS_PREINSTALL_AUTO_UPDATE: "false"
     volumes:
       - grafana-storage:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro,z
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro,z
     networks:
       - vermicompost-net
     healthcheck:
@@ -246,8 +246,8 @@ services:
       - --storage.tsdb.wal-compression
       - --web.route-prefix=/
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./monitoring/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro,z
+      - ./monitoring/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro,z
       - prometheus-data:/prometheus
     depends_on:
       cert-provisioner:
@@ -276,7 +276,7 @@ services:
     ports:
       - "${NGINX_HTTPS_BIND:-127.0.0.1:8443}:443"
     volumes:
-      - ./.certs:/etc/nginx/certs:ro
+      - ./.certs:/etc/nginx/certs:ro,z
     depends_on:
       telemetry-ingestion-service:
         condition: service_healthy

@@ -2,6 +2,8 @@ from datetime import UTC, datetime, timedelta
 import pathlib
 import sys
 
+from decimal import Decimal
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -11,9 +13,9 @@ if str(SERVICE_ROOT) not in sys.path:
     sys.path.insert(0, str(SERVICE_ROOT))
 
 from app.database.base import Base
-from app.exceptions import ValidationError
+from app.exceptions import ConflictError, DependencyError, ValidationError
 from app.models.telemetry_model import CamaVermicompostaje, Lectura, LecturaInvalida, NodoSensor, TipoVariable
-from app.schemas.telemetry_schema import LecturaCreate
+from app.schemas.telemetry_schema import CamaCreate, CamaUpdate, LecturaCreate, NodoCreate
 from app.services import telemetry_service
 
 
@@ -171,6 +173,83 @@ def test_ingest_future_measurement_is_timestamp_invalido(db_session, seeded_enti
     assert result["motivo_invalidacion"] == "timestamp_invalido"
     invalid = db_session.query(LecturaInvalida).one()
     assert invalid.tipo_error == "timestamp_invalido"
+
+
+def test_create_cama_rejects_duplicate_payload(db_session):
+    payload = CamaCreate(nombre="Cama 1", ubicacion="Zona Norte")
+
+    first = telemetry_service.create_cama(db_session, payload)
+
+    with pytest.raises(ConflictError):
+        telemetry_service.create_cama(db_session, payload)
+
+    assert first.cama_id is not None
+    assert db_session.query(CamaVermicompostaje).count() == 1
+
+
+def test_update_cama_rejects_duplicate_payload(db_session):
+    cama_a = telemetry_service.create_cama(db_session, CamaCreate(nombre="Cama A", ubicacion="Zona Norte"))
+    cama_b = telemetry_service.create_cama(db_session, CamaCreate(nombre="Cama B", ubicacion="Zona Sur"))
+
+    with pytest.raises(ConflictError):
+        telemetry_service.update_cama(
+            db_session,
+            cama_b.cama_id,
+            CamaUpdate(nombre=cama_a.nombre, ubicacion=cama_a.ubicacion, latitud=cama_a.latitud, longitud=cama_a.longitud),
+        )
+
+    assert db_session.query(CamaVermicompostaje).count() == 2
+
+
+def test_create_nodo_rejects_duplicate_codigo(db_session, seeded_entities):
+    payload = NodoCreate(cama_id=seeded_entities["cama_id"], codigo_nodo="NODO-001")
+
+    with pytest.raises(ConflictError):
+        telemetry_service.create_nodo(db_session, payload)
+
+    assert db_session.query(NodoSensor).count() == 1
+
+
+def test_delete_cama_blocks_when_it_has_nodes(db_session, seeded_entities):
+    with pytest.raises(DependencyError):
+        telemetry_service.delete_cama(db_session, seeded_entities["cama_id"])
+
+    assert db_session.query(CamaVermicompostaje).count() == 1
+    assert db_session.query(NodoSensor).count() == 1
+
+
+def test_delete_cama_allows_empty_cama(db_session):
+    cama = telemetry_service.create_cama(db_session, CamaCreate(nombre="Cama Vacia", ubicacion="Zona Este"))
+
+    telemetry_service.delete_cama(db_session, cama.cama_id)
+
+    assert db_session.query(CamaVermicompostaje).count() == 0
+
+
+def test_delete_nodo_blocks_when_it_has_readings(db_session, seeded_entities):
+    payload = LecturaCreate(
+        nodo_id=seeded_entities["nodo_id"],
+        tipo_variable_id=seeded_entities["tipo_variable_id"],
+        valor=Decimal("25.5"),
+        fecha_medicion=datetime.now(UTC) - timedelta(minutes=1),
+        fecha_recepcion=datetime.now(UTC),
+    )
+    telemetry_service.create_lectura(db_session, payload)
+
+    with pytest.raises(DependencyError):
+        telemetry_service.delete_nodo(db_session, seeded_entities["nodo_id"])
+
+    assert db_session.query(NodoSensor).count() == 1
+    assert db_session.query(Lectura).count() == 1
+
+
+def test_delete_nodo_allows_empty_nodo(db_session):
+    cama = telemetry_service.create_cama(db_session, CamaCreate(nombre="Cama 2", ubicacion="Zona Sur"))
+    nodo = telemetry_service.create_nodo(db_session, NodoCreate(cama_id=cama.cama_id, codigo_nodo="NODO-002"))
+
+    telemetry_service.delete_nodo(db_session, nodo.nodo_id)
+
+    assert db_session.query(NodoSensor).count() == 0
 
 
 def test_ingest_reception_before_measurement_is_timestamp_invalido(db_session, seeded_entities):
