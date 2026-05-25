@@ -6,5 +6,6 @@
 __pycache__/
 .pytest_cache/
 
-#vsCode settings
+# Folders / Directories
 .vscode/
+docs/

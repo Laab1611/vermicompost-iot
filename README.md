@@ -16,7 +16,6 @@ Plataforma de monitoreo de vermicompostaje con arquitectura de microservicios, m
 - `telemetry`, `query` y `twins` requieren `Authorization: Bearer <token>`.
 - Define `API_BEARER_TOKEN` en `.env` antes de levantar la pila.
 - `health` sigue público para monitoreo.
-
 ## Enrutamiento por Nginx
 
 - /telemetry/* -> telemetry-ingestion-service
@@ -75,20 +74,24 @@ curl -k https://localhost:8443/twins/health
 
 ## Levantar proyecto
 
-1. Configura `.env` con `DATABASE_URL` y `API_BEARER_TOKEN`.
-2. Construye y levanta. Compose provisiona el certificado local en `.certs/` automáticamente:
+1. Configura `.env` con `DATABASE_URL`, `API_BEARER_TOKEN`, `GRAFANA_USER`, `GRAFANA_PASSWORD` y las credenciales del viewer de Grafana (`GRAFANA_VIEWER_USER`, `GRAFANA_VIEWER_PASSWORD`, `GRAFANA_VIEWER_EMAIL`, `GRAFANA_VIEWER_NAME`).
+2. Construye y levanta. Compose provisiona el certificado local en `.certs/` automáticamente.
 
-```bash
-docker compose up --build -d
-```
+   El archivo compose es retrocompatible — puedes usar cualquiera de los dos:
 
-Si usas Podman, ejecuta el mismo archivo con el wrapper local:
+   **Opción A — Wrapper Podman Compose (usando uv)**
 
-```bash
-source ~/Documents/code/py_venvs/podman_compose/bin/activate
-podman-compose up --build -d
-```
+   ```bash
+   uv venv podman && source podman/bin/activate
+   uv pip install podman-compose
+   podman-compose up --build -d
+   ```
 
+   **Opción B — Docker Compose:**
+
+   ```bash
+   docker compose up --build -d
+   ```
 3. Smoke test:
 
 ```bash
@@ -110,12 +113,15 @@ Después de levantar el stack, validar:
 	- Confirmar en los logs de Prometheus que los grupos `disponibilidad-servicios`, `rendimiento-api` e `ingestion-broker` cargan sin errores.
 	- El UI de Prometheus no se expone públicamente.
 4. Provisioning automático de Grafana:
-	- Ingresar a `https://localhost:8443/grafana/`.
+	- Ingresar a `https://localhost:8443/grafana/login`.
 	- Verificar datasource `Prometheus` aprovisionado automáticamente.
-   - Verificar el tablero `Vermicompost IoT - Observabilidad del Backend` en la carpeta `Observabilidad`.
-5. Métricas nuevas de backend visibles:
+	- Verificar el tablero `Vermicompost IoT - Observabilidad del Backend` en la carpeta `Observabilidad`.
+5. Roles de Grafana:
+	- Ingresar con `GRAFANA_USER` y confirmar que puede crear/editar dashboards.
+	- Ingresar con `GRAFANA_VIEWER_USER` y confirmar que solo puede visualizar dashboards existentes.
+6. Métricas nuevas de backend visibles:
 	- Validar series `ingestion_broker_enqueue_total`, `ingestion_broker_processed_total`, `ingestion_broker_process_seconds`, `ingestion_redis_stream_length`, `ingestion_redis_pending_messages`, `ingestion_redis_consumer_lag`, `ingestion_batch_buffer_size`.
-6. SLO de latencia:
+7. SLO de latencia:
 	- Confirmar panel y alertas p95 para ingesta y consulta con umbral de 5000 ms.
 
 ## Pruebas recomendadas en local
@@ -150,10 +156,6 @@ Controles de batch en modo broker:
 
 - `BROKER_BATCH_SIZE=100`
 - `BROKER_FLUSH_SECONDS=1.0`
-
-Referencia técnica completa:
-
-- `docs/broker-escalabilidad-analisis.md`
 
 ## Documentación por servicio
 
