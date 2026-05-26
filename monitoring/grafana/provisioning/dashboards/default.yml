@@ -1,34 +1,11 @@
 apiVersion: 1
 providers:
-  - name: "Sistema"
+  - name: "Vermicompost IoT"
     orgId: 1
-    folder: "Sistema"
     type: file
     disableDeletion: false
     editable: false
     updateIntervalSeconds: 30
     options:
-      path: /var/lib/grafana/dashboards/sistema
-      foldersFromFilesStructure: false
-
-  - name: "Backend"
-    orgId: 1
-    folder: "Backend"
-    type: file
-    disableDeletion: false
-    editable: false
-    updateIntervalSeconds: 30
-    options:
-      path: /var/lib/grafana/dashboards/backend
-      foldersFromFilesStructure: false
-
-  - name: "Dominio"
-    orgId: 1
-    folder: "Dominio"
-    type: file
-    disableDeletion: false
-    editable: false
-    updateIntervalSeconds: 30
-    options:
-      path: /var/lib/grafana/dashboards/dominio
+      path: /var/lib/grafana/dashboards
       foldersFromFilesStructure: false

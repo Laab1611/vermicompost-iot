@@ -48,7 +48,8 @@ services:
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
       GF_PATHS_PROVISIONING: /etc/grafana/provisioning
       GF_METRICS_ENABLED: "true"
-      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+      GF_PLUGINS_PREINSTALL: ${GF_PLUGINS_PREINSTALL:-yesoreyeram-infinity-datasource}
+      GF_PLUGINS_PREINSTALL_DISABLED: "false"
       GF_PLUGINS_PREINSTALL_AUTO_UPDATE: "false"
     volumes:
       - grafana-storage:/var/lib/grafana
