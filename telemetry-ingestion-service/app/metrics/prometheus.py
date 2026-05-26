@@ -30,7 +30,7 @@ ingestion_redis_pending_messages = Gauge(
 
 ingestion_redis_consumer_lag = Gauge(
     "ingestion_redis_consumer_lag",
-    "Consumer lag: messages waiting to be processed (stream_length - pending)",
+    "Consumer lag: real entries not yet delivered to the consumer group (XINFO GROUPS lag)",
 )
 
 ingestion_batch_buffer_size = Gauge(

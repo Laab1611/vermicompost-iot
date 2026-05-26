@@ -65,7 +65,7 @@
     {
       "id": 3,
       "type": "stat",
-      "title": "Latencia p95 observada (ms)",
+      "title": "Latencia p95 global backend (ms)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -251,6 +251,216 @@
         "overrides": []
       },
       "gridPos": { "x": 0, "y": 21, "w": 24, "h": 8 }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Latencia p95 API de Ingesta (ms)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"telemetry-ingestion-service\"}[5m]))) * 1000 or vector(0)",
+          "legendFormat": "p95 ingesta",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 200 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "textMode": "auto"
+      },
+      "gridPos": { "x": 0, "y": 29, "w": 6, "h": 5 }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Requests HTTP de Ingesta (req/s)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(http_requests_total{job=\"telemetry-ingestion-service\"}[5m])) or vector(0)",
+          "legendFormat": "Req/s",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "decimals": 2 },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "textMode": "auto"
+      },
+      "gridPos": { "x": 6, "y": 29, "w": 6, "h": 5 }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Error rate 5xx API de Ingesta (%)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "100 * (sum(rate(http_requests_total{job=\"telemetry-ingestion-service\",status=~\"5..\"}[5m])) or vector(0)) / clamp_min((sum(rate(http_requests_total{job=\"telemetry-ingestion-service\"}[5m])) or vector(0)), 0.001)",
+          "legendFormat": "5xx",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.5 },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "textMode": "auto"
+      },
+      "gridPos": { "x": 12, "y": 29, "w": 6, "h": 5 }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Handlers activos Ingesta",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "count(count by (handler) (rate(http_requests_total{job=\"telemetry-ingestion-service\"}[5m]))) or vector(0)",
+          "legendFormat": "Handlers",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "decimals": 0 },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "textMode": "auto"
+      },
+      "gridPos": { "x": 18, "y": 29, "w": 6, "h": 5 }
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Latencia y carga HTTP de Ingesta",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"telemetry-ingestion-service\"}[5m]))) * 1000 or vector(0)",
+          "legendFormat": "p95",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(http_requests_total{job=\"telemetry-ingestion-service\"}[5m])) or vector(0)",
+          "legendFormat": "Tráfico req/s",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 200 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Tráfico req/s" },
+            "properties": [
+              { "id": "unit", "value": "reqps" },
+              { "id": "decimals", "value": 2 }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 0, "y": 34, "w": 12, "h": 8 }
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Requests por handler en Ingesta",
+      "description": "Request rate por handler en telemetry-ingestion-service. Excluye /health y /metrics si no hay tráfico funcional.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (handler) (rate(http_requests_total{job=\"telemetry-ingestion-service\",handler!~\"/health|/metrics\"}[5m]))",
+          "legendFormat": "{{handler}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "decimals": 2 },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 12, "y": 34, "w": 12, "h": 8 }
     }
   ],
   "templating": { "list": [] },

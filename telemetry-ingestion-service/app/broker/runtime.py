@@ -156,10 +156,9 @@ class BrokerIngestionRuntime:
                 status = self._broker.get_stream_status()
                 stream_len = status.get("stream_length", 0)
                 pending = status.get("pending_messages", 0)
+                lag = status.get("consumer_lag", 0)
                 ingestion_redis_stream_length.set(stream_len)
                 ingestion_redis_pending_messages.set(pending)
-                # consumer_lag = messages en stream que no están pendientes
-                lag = max(stream_len - pending, 0)
                 ingestion_redis_consumer_lag.set(lag)
         except Exception:
             logger.exception("Error updating metrics")

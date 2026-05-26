@@ -1,7 +1,7 @@
 {
   "id": null,
   "uid": "vermicompost-ingesta-broker",
-  "title": "Vermicompost IoT - Ingesta Y Broker",
+  "title": "Vermicompost IoT - Ingesta Y Pipeline (Redis Streams)",
   "tags": ["vermicompost", "backend", "ingesta", "broker", "redis"],
   "timezone": "browser",
   "schemaVersion": 41,
@@ -13,6 +13,54 @@
     "to": "now"
   },
   "panels": [
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Estado del Broker",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "clamp_min(3 - (((sum(rate(ingestion_broker_processed_total{status=\"error\"}[5m])) or vector(0)) > bool 0) + ((max(ingestion_redis_consumer_lag) or vector(0)) >= bool 250) + ((max(ingestion_redis_consumer_lag) or vector(0)) >= bool 500) + ((max(ingestion_redis_pending_messages) or vector(0)) >= bool 100) + ((max(ingestion_redis_pending_messages) or vector(0)) >= bool 250) + ((((histogram_quantile(0.95, sum by (le) (rate(ingestion_broker_process_seconds_bucket[5m]))) * 1000) and on() (sum(rate(ingestion_broker_process_seconds_count[5m])) > 0)) or vector(0)) >= bool 1000) + ((((histogram_quantile(0.95, sum by (le) (rate(ingestion_broker_process_seconds_bucket[5m]))) * 1000) and on() (sum(rate(ingestion_broker_process_seconds_count[5m])) > 0)) or vector(0)) >= bool 2000)), 1)",
+          "legendFormat": "Salud",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 2 },
+              { "color": "green", "value": 3 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": { "text": "CRÍTICO", "color": "red" },
+                "2": { "text": "DEGRADADO", "color": "orange" },
+                "3": { "text": "SANO", "color": "green" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 }
+    },
     {
       "id": 1,
       "type": "stat",
@@ -30,7 +78,15 @@
         "defaults": { "unit": "ops", "decimals": 2 },
         "overrides": []
       },
-      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 }
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 5 }
     },
     {
       "id": 2,
@@ -49,11 +105,65 @@
         "defaults": { "unit": "ops", "decimals": 2 },
         "overrides": []
       },
-      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 5 }
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Servicio ingesta UP",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(up{job=\"telemetry-ingestion-service\"}) or vector(0)",
+          "legendFormat": "Servicio ingesta",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "DOWN", "color": "red" },
+                "1": { "text": "UP", "color": "green" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 5 }
     },
     {
       "id": 3,
-      "type": "stat",
+      "type": "gauge",
       "title": "Procesados error (msg/s)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
@@ -68,21 +178,28 @@
         "defaults": {
           "unit": "ops",
           "decimals": 2,
+          "min": 0,
+          "max": 10,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "value": 0, "color": "green" },
-              { "value": 0.01, "color": "red" }
+              { "color": "green", "value": null },
+              { "color": "red", "value": 0.01 }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 5 }
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "gridPos": { "x": 0, "y": 5, "w": 6, "h": 5 }
     },
     {
       "id": 4,
-      "type": "stat",
+      "type": "gauge",
       "title": "Lag consumidor Redis",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
@@ -97,18 +214,189 @@
         "defaults": {
           "unit": "none",
           "decimals": 0,
+          "min": 0,
+          "max": 1000,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "value": 0, "color": "green" },
-              { "value": 250, "color": "orange" },
-              { "value": 500, "color": "red" }
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 250 },
+              { "color": "red", "value": 500 }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 5 }
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "gridPos": { "x": 6, "y": 5, "w": 6, "h": 5 }
+    },
+    {
+      "id": 8,
+      "type": "gauge",
+      "title": "Pendientes Redis",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(ingestion_redis_pending_messages) or vector(0)",
+          "legendFormat": "Pendientes",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "min": 0,
+          "max": 500,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 100 },
+              { "color": "red", "value": 250 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "gridPos": { "x": 12, "y": 5, "w": 6, "h": 5 }
+    },
+    {
+      "id": 9,
+      "type": "gauge",
+      "title": "Buffer batch actual",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(ingestion_batch_buffer_size) or vector(0)",
+          "legendFormat": "Buffer",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "min": 0,
+          "max": 500,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 100 },
+              { "color": "red", "value": 250 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "gridPos": { "x": 18, "y": 5, "w": 6, "h": 5 }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Diferencia encolados - procesados",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "(sum(rate(ingestion_broker_enqueue_total[5m])) or vector(0)) - (sum(rate(ingestion_broker_processed_total{status=\"ok\"}[5m])) or vector(0))",
+          "legendFormat": "Diferencia",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.01 },
+              { "color": "red", "value": 10 }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "min", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 0, "y": 10, "w": 12, "h": 8 }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Latencia p95 de procesamiento broker (ms)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "((histogram_quantile(0.95, sum by (le) (rate(ingestion_broker_process_seconds_bucket[5m]))) * 1000) and on() (sum(rate(ingestion_broker_process_seconds_count[5m])) > 0)) or vector(0)",
+          "legendFormat": "p95 broker",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1000 },
+              { "color": "red", "value": 2000 }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "min", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 12, "y": 10, "w": 12, "h": 8 }
     },
     {
       "id": 5,
@@ -136,40 +424,28 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "ops", "decimals": 2 },
-        "overrides": []
-      },
-      "gridPos": { "x": 0, "y": 5, "w": 12, "h": 8 }
-    },
-    {
-      "id": 6,
-      "type": "timeseries",
-      "title": "Latencia p95 de procesamiento broker (ms)",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(ingestion_broker_process_seconds_bucket[5m]))) * 1000 or vector(0)",
-          "legendFormat": "p95 broker",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
         "defaults": {
-          "unit": "ms",
-          "decimals": 1,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "value": 0, "color": "green" },
-              { "value": 1000, "color": "orange" },
-              { "value": 2000, "color": "red" }
-            ]
+          "unit": "ops",
+          "decimals": 2,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto"
           }
         },
         "overrides": []
       },
-      "gridPos": { "x": 12, "y": 5, "w": 12, "h": 8 }
+      "options": {
+        "legend": {
+          "calcs": ["last", "min", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 0, "y": 18, "w": 12, "h": 8 }
     },
     {
       "id": 7,
@@ -203,70 +479,28 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "none", "decimals": 0 },
-        "overrides": []
-      },
-      "gridPos": { "x": 0, "y": 13, "w": 16, "h": 8 }
-    },
-    {
-      "id": 8,
-      "type": "stat",
-      "title": "Pendientes Redis",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "max(ingestion_redis_pending_messages) or vector(0)",
-          "legendFormat": "Pendientes",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
         "defaults": {
           "unit": "none",
           "decimals": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "value": 0, "color": "green" },
-              { "value": 100, "color": "orange" },
-              { "value": 250, "color": "red" }
-            ]
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto"
           }
         },
         "overrides": []
       },
-      "gridPos": { "x": 16, "y": 13, "w": 8, "h": 4 }
-    },
-    {
-      "id": 9,
-      "type": "stat",
-      "title": "Buffer batch actual",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "max(ingestion_batch_buffer_size) or vector(0)",
-          "legendFormat": "Buffer",
-          "refId": "A"
+      "options": {
+        "legend": {
+          "calcs": ["last", "min", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
         }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "decimals": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "value": 0, "color": "green" },
-              { "value": 100, "color": "orange" },
-              { "value": 250, "color": "red" }
-            ]
-          }
-        },
-        "overrides": []
       },
-      "gridPos": { "x": 16, "y": 17, "w": 8, "h": 4 }
+      "gridPos": { "x": 12, "y": 18, "w": 12, "h": 8 }
     }
   ],
   "templating": { "list": [] },

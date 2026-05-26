@@ -98,42 +98,57 @@ class RedisStreamsBroker(MessageBroker):
 
     def get_stream_status(self) -> dict[str, int]:
         """
-        Retorna info del stream para observabilidad: stream_length, pending_count.
-        Usado por runtime para exportar métricas de Prometheus.
+        Retorna info del stream para observabilidad:
+          - stream_length: total de mensajes retenidos en el stream.
+          - pending_messages: mensajes pendientes de acknowledge en el consumer group.
+          - consumer_lag: lag real del consumer group según XINFO GROUPS,
+            o 0 si no está disponible o el grupo no existe.
         """
         try:
             stream_len = self._redis.xlen(self._stream_key)
-            pending_info = self._redis.xpending(self._stream_key, self._consumer_group)
+            groups = self._redis.xinfo_groups(self._stream_key)
 
-            # redis-py may return dict format or tuple/list format depending on version.
-            if isinstance(pending_info, dict):
-                pending_count = int(pending_info.get("pending", 0))
-            elif isinstance(pending_info, (tuple, list)):
-                pending_count = int(pending_info[0]) if pending_info else 0
+            # Buscar nuestro consumer group por nombre.
+            group = None
+            for g in groups:
+                if g.get("name") == self._consumer_group:
+                    group = g
+                    break
+
+            if group is not None:
+                pending_count = int(group.get("pending", 0))
+                raw_lag = group.get("lag")
+                # Redis reports lag as None when tracking is temporarily unavailable.
+                consumer_lag = int(raw_lag) if raw_lag is not None else 0
             else:
                 pending_count = 0
+                consumer_lag = 0
 
             return {
                 "stream_length": stream_len,
                 "pending_messages": pending_count,
+                "consumer_lag": consumer_lag,
             }
         except ResponseError as exc:
             # API-only instances may query before/without a consumer group.
-            if "NOGROUP" in str(exc):
+            if "NOGROUP" in str(exc) or "no such key" in str(exc).lower():
                 return {
                     "stream_length": self._redis.xlen(self._stream_key),
                     "pending_messages": 0,
+                    "consumer_lag": 0,
                 }
             self._logger.warning("Error fetching Redis stream status: %s", exc)
             return {
                 "stream_length": 0,
                 "pending_messages": 0,
+                "consumer_lag": 0,
             }
         except Exception as e:
             self._logger.warning("Error fetching Redis stream status: %s", e)
             return {
                 "stream_length": 0,
                 "pending_messages": 0,
+                "consumer_lag": 0,
             }
 
     def close(self) -> None:
