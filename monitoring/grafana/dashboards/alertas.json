@@ -94,43 +94,61 @@
           {
             "matcher": { "id": "byName", "options": "Value" },
             "properties": [
-              { "id": "displayName", "value": "Valor" },
-              { "id": "custom.width", "value": 70 }
+              { "id": "custom.hidden", "value": true }
             ]
           },
           {
             "matcher": { "id": "byName", "options": "alertname" },
             "properties": [
-              { "id": "displayName", "value": "Alerta" },
-              { "id": "custom.width", "value": 250 }
+              { "id": "displayName", "value": "Alerta" }
             ]
           },
           {
             "matcher": { "id": "byName", "options": "severity" },
             "properties": [
-              { "id": "displayName", "value": "Severidad" },
-              { "id": "custom.width", "value": 100 }
+              { "id": "displayName", "value": "Severidad" }
             ]
           },
           {
             "matcher": { "id": "byName", "options": "job" },
             "properties": [
-              { "id": "displayName", "value": "Servicio" },
-              { "id": "custom.width", "value": 200 }
+              { "id": "displayName", "value": "Servicio" }
             ]
           },
           {
             "matcher": { "id": "byName", "options": "cama_nombre" },
             "properties": [
-              { "id": "displayName", "value": "Cama" },
-              { "id": "custom.width", "value": 150 }
+              { "id": "displayName", "value": "Cama" }
             ]
           },
           {
             "matcher": { "id": "byName", "options": "codigo_nodo" },
             "properties": [
-              { "id": "displayName", "value": "Sensor" },
-              { "id": "custom.width", "value": 150 }
+              { "id": "displayName", "value": "Sensor" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "cama_id" },
+            "properties": [
+              { "id": "displayName", "value": "Cama ID" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "nodo_id" },
+            "properties": [
+              { "id": "displayName", "value": "Nodo ID" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "alertstate" },
+            "properties": [
+              { "id": "custom.hidden", "value": true }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "team" },
+            "properties": [
+              { "id": "custom.hidden", "value": true }
             ]
           },
           {
@@ -155,7 +173,7 @@
       },
       "options": { "showHeader": true },
       "transformations": [],
-      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 }
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 5 }
     },
     {
       "id": 4,
@@ -167,7 +185,7 @@
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "ALERTS{alertstate=\"firing\"}",
-          "legendFormat": "{{alertname}}{{if .cama_nombre}} - {{.cama_nombre}}{{end}}{{if .codigo_nodo}} - {{.codigo_nodo}}{{end}}",
+          "legendFormat": "{{alertname}} - {{cama_nombre}} - {{codigo_nodo}}",
           "refId": "A"
         }
       ],
@@ -230,56 +248,40 @@
             "showPoints": "auto"
           }
         },
-        "overrides": []
+    "overrides": [
+      {
+        "matcher": { "id": "byName", "options": "warning" },
+        "properties": [
+          { "id": "displayName", "value": "Advertencia" }
+        ]
       },
-      "options": {
-        "legend": {
-          "calcs": ["last", "max", "mean"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        }
-      },
-      "gridPos": { "x": 0, "y": 13, "w": 12, "h": 8 }
-    },
-    {
-      "id": 6,
-      "type": "timeseries",
-      "title": "Alertas por equipo",
-      "description": "Alertas firing agrupadas por equipo responsable (team).",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "count by (team) (ALERTS{alertstate=\"firing\"})",
-          "legendFormat": "{{team}}",
-          "refId": "A"
-        }
+      {
+        "matcher": { "id": "byName", "options": "critical" },
+        "properties": [
+          { "id": "displayName", "value": "Critico" }
+        ]
+      }
+    ]
+  },
+  "options": {
+    "legend": {
+      "calcs": [
+        "last",
+        "max",
+        "mean"
       ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "decimals": 0,
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "showPoints": "auto"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "calcs": ["last", "max", "mean"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        }
-      },
-      "gridPos": { "x": 12, "y": 13, "w": 12, "h": 8 }
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
     }
+  },
+  "gridPos": {
+    "x": 0,
+    "y": 13,
+    "w": 24,
+    "h": 8
+  }
+}
   ],
   "templating": { "list": [] },
   "annotations": {

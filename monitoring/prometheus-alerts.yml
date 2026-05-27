@@ -6,7 +6,6 @@ groups:
         for: 2m
         labels:
           severity: critical
-          team: platform
         annotations:
           summary: "Servicio {{ $labels.job }} no disponible"
           description: "Prometheus no puede recolectar métricas del servicio {{ $labels.job }} durante al menos 2 minutos."
@@ -16,7 +15,6 @@ groups:
         for: 5m
         labels:
           severity: warning
-          team: platform
         annotations:
           summary: "Inestabilidad de scrape en {{ $labels.job }}"
           description: "La disponibilidad promedio de scrape cayó por debajo de 80% en 10 minutos para {{ $labels.job }}."
@@ -28,7 +26,6 @@ groups:
         for: 10m
         labels:
           severity: warning
-          team: backend
         annotations:
           summary: "Latencia p95 alta en API de ingesta"
           description: "La latencia p95 superó 5 s por al menos 10 minutos en telemetry-ingestion-service."
@@ -38,7 +35,6 @@ groups:
         for: 10m
         labels:
           severity: warning
-          team: backend
         annotations:
           summary: "Latencia p95 alta en API de consulta"
           description: "La latencia p95 superó 5 s por al menos 10 minutos en query-monitoring-service."
@@ -48,7 +44,6 @@ groups:
         for: 10m
         labels:
           severity: critical
-          team: backend
         annotations:
           summary: "Error rate 5xx alto en API de ingesta"
           description: "La tasa de respuestas 5xx es mayor a 1% en telemetry-ingestion-service durante al menos 10 minutos."
@@ -58,7 +53,6 @@ groups:
         for: 10m
         labels:
           severity: critical
-          team: backend
         annotations:
           summary: "Error rate 5xx alto en API de consulta"
           description: "La tasa de respuestas 5xx es mayor a 1% en query-monitoring-service durante al menos 10 minutos."
@@ -70,7 +64,6 @@ groups:
         for: 5m
         labels:
           severity: warning
-          team: backend
         annotations:
           summary: "Errores de procesamiento en broker de ingesta"
           description: "Se detectaron mensajes con error en telemetry-ingestion-service durante los últimos 10 minutos."
@@ -80,7 +73,6 @@ groups:
         for: 10m
         labels:
           severity: warning
-          team: backend
         annotations:
           summary: "Lag alto del consumidor Redis en ingesta"
           description: "Lag de consumidor por encima de 500 mensajes durante al menos 10 minutos. Umbral asumido temporalmente."
@@ -90,7 +82,6 @@ groups:
         for: 10m
         labels:
           severity: warning
-          team: backend
         annotations:
           summary: "Mensajes pendientes altos en Redis Streams"
           description: "Mensajes pendientes por encima de 250 durante al menos 10 minutos. Umbral asumido temporalmente."
@@ -100,7 +91,6 @@ groups:
         for: 10m
         labels:
           severity: critical
-          team: backend
         annotations:
           summary: "Buffer de ingesta con estancamiento"
           description: "Hay datos en buffer pero no se procesaron mensajes exitosos en 10 minutos."
@@ -110,7 +100,6 @@ groups:
         for: 10m
         labels:
           severity: warning
-          team: backend
         annotations:
           summary: "Latencia p95 alta en procesamiento del broker"
           description: "La latencia p95 de procesamiento de mensajes superó 2 s durante al menos 10 minutos. Umbral asumido temporalmente."
@@ -122,7 +111,6 @@ groups:
         for: 30m
         labels:
           severity: warning
-          team: monitoreo
         annotations:
           summary: "Sensor {{ $labels.codigo_nodo }} caido"
           description: "El sensor {{ $labels.codigo_nodo }} en {{ $labels.cama_nombre }} (cama ID: {{ $labels.cama_id }}) no ha reportado lecturas en los ultimos minutos. Verifique conectividad y estado del dispositivo."
@@ -132,7 +120,6 @@ groups:
         for: 30m
         labels:
           severity: warning
-          team: monitoreo
         annotations:
           summary: "pH fuera de rango en {{ $labels.cama_nombre }}"
           description: "El pH promedio en {{ $labels.cama_nombre }} (ID: {{ $labels.cama_id }}) es {{ $value | humanize }}. Rango óptimo: 6-7.5. Revise condiciones del sustrato y enmiendas."
@@ -142,7 +129,6 @@ groups:
         for: 30m
         labels:
           severity: warning
-          team: monitoreo
         annotations:
           summary: "Humedad fuera de rango en {{ $labels.cama_nombre }}"
           description: "La humedad relativa promedio en {{ $labels.cama_nombre }} (ID: {{ $labels.cama_id }}) es {{ $value | humanize }} %. Rango óptimo: 70-80 %. Evalúe riego y drenaje."
@@ -152,7 +138,6 @@ groups:
         for: 30m
         labels:
           severity: warning
-          team: monitoreo
         annotations:
           summary: "Temperatura fuera de rango en {{ $labels.cama_nombre }}"
           description: "La temperatura promedio en {{ $labels.cama_nombre }} (ID: {{ $labels.cama_id }}) es {{ $value | humanize }} °C. Rango óptimo: 20-25 °C. Revise condiciones ambientales y riego."
