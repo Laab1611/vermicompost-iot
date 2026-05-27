@@ -1,0 +1,46 @@
+name: Docker Build
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: telemetry-ingestion-service
+            context: ./telemetry-ingestion-service
+          - name: query-monitoring-service
+            context: ./query-monitoring-service
+          - name: digital-twin-service
+            context: ./digital-twin-service
+          - name: api-gateway
+            context: ./api-gateway
+          - name: cert-provisioner
+            context: ./cert-provisioner
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set lowercase image name
+        run: |
+          echo "IMAGE_NAME=${REGISTRY}/${GITHUB_REPOSITORY,,}/${{ matrix.name }}" >> $GITHUB_ENV
+
+      - name: Build image
+        run: docker build -t ${{ env.IMAGE_NAME }} -t ${{ env.IMAGE_NAME }}:sha-${{ github.sha }} ${{ matrix.context }}
+
+      - name: Push to GHCR
+        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          docker push ${{ env.IMAGE_NAME }} --all-tags
