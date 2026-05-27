@@ -5,7 +5,7 @@
   "tags": ["vermicompost", "calidad", "datos"],
   "timezone": "browser",
   "schemaVersion": 41,
-  "version": 1,
+  "version": 2,
   "refresh": "30s",
   "time": {
     "from": "now-6h",
@@ -40,7 +40,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 }
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 5 }
     },
     {
       "id": 2,
@@ -71,7 +71,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 5 }
+      "gridPos": { "x": 8, "y": 0, "w": 8, "h": 5 }
     },
     {
       "id": 3,
@@ -82,7 +82,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(query_monitoring_lecturas_validas) / (sum(query_monitoring_lecturas_validas) + sum(query_monitoring_lecturas_invalidas)) * 100 or vector(100)",
+          "expr": "(sum(query_monitoring_lecturas_validas) / (sum(query_monitoring_lecturas_validas) + sum(query_monitoring_lecturas_invalidas)) * 100) unless (sum(query_monitoring_lecturas_validas) + sum(query_monitoring_lecturas_invalidas) == 0) or vector(100)",
           "legendFormat": "Calidad",
           "refId": "A"
         }
@@ -109,7 +109,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 5 }
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 5 }
     },
     {
       "id": 4,
@@ -147,8 +147,8 @@
       },
       "options": {
         "legend": {
-          "calcs": ["last", "max"],
-          "displayMode": "table",
+          "calcs": [],
+          "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         }
@@ -164,7 +164,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(query_monitoring_lecturas_validas) / (sum(query_monitoring_lecturas_validas) + sum(query_monitoring_lecturas_invalidas)) * 100 or vector(100)",
+          "expr": "(sum(query_monitoring_lecturas_validas) / (sum(query_monitoring_lecturas_validas) + sum(query_monitoring_lecturas_invalidas)) * 100) unless (sum(query_monitoring_lecturas_validas) + sum(query_monitoring_lecturas_invalidas) == 0) or vector(100)",
           "legendFormat": "Calidad",
           "refId": "A"
         }
@@ -195,8 +195,8 @@
       },
       "options": {
         "legend": {
-          "calcs": ["last", "max", "min"],
-          "displayMode": "table",
+          "calcs": [],
+          "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         }
@@ -212,7 +212,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "topk(10, query_monitoring_errores_por_nodo_total)",
+          "expr": "topk(10, query_monitoring_errores_por_nodo_total) or label_replace(label_replace(0 * absent(topk(10, query_monitoring_errores_por_nodo_total)), \"codigo_nodo\", \"Sin sensores\", \"__name__\", \".*\"), \"cama_nombre\", \"con errores\", \"codigo_nodo\", \".*\")",
           "legendFormat": "{{codigo_nodo}} - {{cama_nombre}}",
           "refId": "A"
         }
@@ -246,7 +246,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "query_monitoring_invalidaciones_por_causa_total",
+          "expr": "query_monitoring_invalidaciones_por_causa_total or label_replace(0 * absent(query_monitoring_invalidaciones_por_causa_total), \"tipo_error\", \"Sin invalidaciones\", \"__name__\", \".*\")",
           "legendFormat": "{{tipo_error}}",
           "refId": "A"
         }
