@@ -114,3 +114,45 @@ groups:
         annotations:
           summary: "Latencia p95 alta en procesamiento del broker"
           description: "La latencia p95 de procesamiento de mensajes superó 2 s durante al menos 10 minutos. Umbral asumido temporalmente."
+
+  - name: sensor-alertas
+    rules:
+      - alert: SensorCaido
+        expr: query_monitoring_nodo_conectado == 0
+        for: 30m
+        labels:
+          severity: warning
+          team: monitoreo
+        annotations:
+          summary: "Sensor {{ $labels.codigo_nodo }} caido"
+          description: "El sensor {{ $labels.codigo_nodo }} en {{ $labels.cama_nombre }} (cama ID: {{ $labels.cama_id }}) no ha reportado lecturas en los ultimos minutos. Verifique conectividad y estado del dispositivo."
+
+      - alert: PhFueraDeRango
+        expr: query_sensor_ph < 6 or query_sensor_ph > 7.5
+        for: 30m
+        labels:
+          severity: warning
+          team: monitoreo
+        annotations:
+          summary: "pH fuera de rango en {{ $labels.cama_nombre }}"
+          description: "El pH promedio en {{ $labels.cama_nombre }} (ID: {{ $labels.cama_id }}) es {{ $value | humanize }}. Rango óptimo: 6-7.5. Revise condiciones del sustrato y enmiendas."
+
+      - alert: HumedadFueraDeRango
+        expr: query_sensor_humedad_relativa_percent < 70 or query_sensor_humedad_relativa_percent > 80
+        for: 30m
+        labels:
+          severity: warning
+          team: monitoreo
+        annotations:
+          summary: "Humedad fuera de rango en {{ $labels.cama_nombre }}"
+          description: "La humedad relativa promedio en {{ $labels.cama_nombre }} (ID: {{ $labels.cama_id }}) es {{ $value | humanize }} %. Rango óptimo: 70-80 %. Evalúe riego y drenaje."
+
+      - alert: TemperaturaFueraDeRango
+        expr: query_sensor_temperatura_celsius < 20 or query_sensor_temperatura_celsius > 25
+        for: 30m
+        labels:
+          severity: warning
+          team: monitoreo
+        annotations:
+          summary: "Temperatura fuera de rango en {{ $labels.cama_nombre }}"
+          description: "La temperatura promedio en {{ $labels.cama_nombre }} (ID: {{ $labels.cama_id }}) es {{ $value | humanize }} °C. Rango óptimo: 20-25 °C. Revise condiciones ambientales y riego."

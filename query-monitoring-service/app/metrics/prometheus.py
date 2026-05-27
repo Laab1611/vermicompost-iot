@@ -46,9 +46,20 @@ query_monitoring_nodos_desconectados = Gauge(
 	"Nodos desconectados segun ventana de monitoreo",
 )
 
+query_monitoring_lecturas_validas = Gauge(
+	"query_monitoring_lecturas_validas",
+	"Total de lecturas validas registradas",
+)
+
 query_monitoring_lecturas_invalidas = Gauge(
 	"query_monitoring_lecturas_invalidas",
 	"Total de lecturas invalidas registradas",
+)
+
+query_monitoring_nodo_conectado = Gauge(
+	"query_monitoring_nodo_conectado",
+	"Indica si un nodo esta conectado (1) o desconectado (0)",
+	["nodo_id", "codigo_nodo", "cama_id", "cama_nombre"],
 )
 
 
@@ -86,9 +97,58 @@ def update_sensor_metrics_by_cama(rows: Sequence[dict]) -> None:
 			query_sensor_ph.labels(**labels).set(float(ph))
 
 
+query_monitoring_errores_por_nodo_total = Gauge(
+	"query_monitoring_errores_por_nodo_total",
+	"Total de errores por nodo sensor",
+	["nodo_id", "codigo_nodo", "cama_id", "cama_nombre"],
+)
+
+
+query_monitoring_invalidaciones_por_causa_total = Gauge(
+	"query_monitoring_invalidaciones_por_causa_total",
+	"Total de invalidaciones por tipo de error",
+	["tipo_error"],
+)
+
+
+def update_invalidaciones_por_causa_metrics(rows: Sequence[dict]) -> None:
+	query_monitoring_invalidaciones_por_causa_total.clear()
+	for row in rows:
+		tipo_error = row.get("tipo_error", "desconocido")
+		query_monitoring_invalidaciones_por_causa_total.labels(
+			tipo_error=str(tipo_error),
+		).set(float(row.get("total", 0)))
+
+
+def update_errores_por_nodo_metrics(rows: Sequence[dict]) -> None:
+	query_monitoring_errores_por_nodo_total.clear()
+	for row in rows:
+		nodo_id = row.get("nodo_id")
+		if nodo_id is None:
+			continue
+		query_monitoring_errores_por_nodo_total.labels(
+			nodo_id=str(nodo_id),
+			codigo_nodo=str(row.get("codigo_nodo") or ""),
+			cama_id=str(row.get("cama_id") or ""),
+			cama_nombre=str(row.get("cama_nombre") or ""),
+		).set(float(row.get("total_errores", 0)))
+
+
+def update_nodo_connection_metrics(nodos: Sequence[dict]) -> None:
+	query_monitoring_nodo_conectado.clear()
+	for nodo in nodos:
+		query_monitoring_nodo_conectado.labels(
+			nodo_id=str(nodo["nodo_id"]),
+			codigo_nodo=str(nodo["codigo_nodo"]),
+			cama_id=str(nodo["cama_id"]),
+			cama_nombre=str(nodo["cama_nombre"]),
+		).set(1.0 if nodo["conectado"] else 0.0)
+
+
 def update_monitoring_summary_metrics(summary: dict) -> None:
 	query_monitoring_total_camas.set(float(summary.get("total_camas", 0)))
 	query_monitoring_total_nodos.set(float(summary.get("total_nodos", 0)))
 	query_monitoring_nodos_conectados.set(float(summary.get("nodos_conectados", 0)))
 	query_monitoring_nodos_desconectados.set(float(summary.get("nodos_desconectados", 0)))
+	query_monitoring_lecturas_validas.set(float(summary.get("lecturas_validas", 0)))
 	query_monitoring_lecturas_invalidas.set(float(summary.get("lecturas_invalidas", 0)))

@@ -80,4 +80,5 @@ class MonitoringSummary(BaseModel):
     total_nodos: int
     nodos_conectados: int
     nodos_desconectados: int
+    lecturas_validas: int
     lecturas_invalidas: int

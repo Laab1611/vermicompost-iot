@@ -11,7 +11,14 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from app.api.routes import router
 from app.config import settings
 from app.database.connection import SessionLocal
-from app.metrics.prometheus import update_cama_info_metrics, update_monitoring_summary_metrics, update_sensor_metrics_by_cama
+from app.metrics.prometheus import (
+	update_cama_info_metrics,
+	update_errores_por_nodo_metrics,
+	update_invalidaciones_por_causa_metrics,
+	update_monitoring_summary_metrics,
+	update_nodo_connection_metrics,
+	update_sensor_metrics_by_cama,
+)
 from app.services import query_service
 
 logger = logging.getLogger(__name__)
@@ -39,9 +46,18 @@ def _refresh_custom_metrics_once() -> None:
             disconnect_minutes=settings.monitoring_disconnect_minutes,
         )
         sensor_by_cama = query_service.get_latest_sensor_averages_by_cama(db)
+        nodos_conexion = query_service.get_all_nodos_connection_status(
+            db,
+            minutes=settings.monitoring_disconnect_minutes,
+        )
+        errores_por_nodo = query_service.get_errores_count_by_nodo(db)
+        invalidaciones_por_causa = query_service.get_invalidaciones_count_by_causa(db)
         update_cama_info_metrics(camas)
         update_monitoring_summary_metrics(summary)
         update_sensor_metrics_by_cama(sensor_by_cama)
+        update_nodo_connection_metrics(nodos_conexion)
+        update_errores_por_nodo_metrics(errores_por_nodo)
+        update_invalidaciones_por_causa_metrics(invalidaciones_por_causa)
     except Exception:
         logger.exception("Failed to refresh custom monitoring metrics")
     finally:

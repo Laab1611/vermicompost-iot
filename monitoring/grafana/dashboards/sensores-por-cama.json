@@ -272,6 +272,15 @@
             "lineWidth": 2,
             "fillOpacity": 8,
             "showPoints": "auto"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 20 },
+              { "color": "yellow", "value": 25 },
+              { "color": "red", "value": 38 }
+            ]
           }
         },
         "overrides": []
@@ -310,6 +319,15 @@
             "lineWidth": 2,
             "fillOpacity": 8,
             "showPoints": "auto"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 70 },
+              { "color": "yellow", "value": 80 },
+              { "color": "red", "value": 95 }
+            ]
           }
         },
         "overrides": []
@@ -348,6 +366,15 @@
             "lineWidth": 2,
             "fillOpacity": 8,
             "showPoints": "auto"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 6 },
+              { "color": "yellow", "value": 7.5 },
+              { "color": "red", "value": 9 }
+            ]
           }
         },
         "overrides": []
@@ -385,8 +412,9 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 15 },
+              { "color": "red", "value": null },
+              { "color": "green", "value": 20 },
+              { "color": "yellow", "value": 25 },
               { "color": "orange", "value": 30 },
               { "color": "red", "value": 38 }
             ]
@@ -425,10 +453,8 @@
             "mode": "absolute",
             "steps": [
               { "color": "red", "value": null },
-              { "color": "orange", "value": 30 },
-              { "color": "green", "value": 50 },
-              { "color": "orange", "value": 80 },
-              { "color": "red", "value": 95 }
+              { "color": "green", "value": 70 },
+              { "color": "red", "value": 81 }
             ]
           }
         },
@@ -465,10 +491,8 @@
             "mode": "absolute",
             "steps": [
               { "color": "red", "value": null },
-              { "color": "orange", "value": 5 },
-              { "color": "green", "value": 6.5 },
-              { "color": "orange", "value": 8 },
-              { "color": "red", "value": 9.5 }
+              { "color": "green", "value": 6 },
+              { "color": "red", "value": 7.6 }
             ]
           }
         },
@@ -656,6 +680,228 @@
         }
       ],
       "gridPos": { "x": 12, "y": 5, "w": 12, "h": 7 }
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Tendencia diaria - Temperatura",
+      "description": "Promedio, mínimo y máximo diario por cama.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "avg_over_time(query_sensor_temperatura_celsius{cama_id=~\"$cama_id\"}[$__interval])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Prom",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "min_over_time(query_sensor_temperatura_celsius{cama_id=~\"$cama_id\"}[$__interval])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Mín",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max_over_time(query_sensor_temperatura_celsius{cama_id=~\"$cama_id\"}[$__interval])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Máx",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "decimals": 2,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 20 },
+              { "color": "yellow", "value": 25 },
+              { "color": "red", "value": 38 }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byFrameRefID", "options": "B" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
+              { "id": "custom.lineWidth", "value": 1 }
+            ]
+          },
+          {
+            "matcher": { "id": "byFrameRefID", "options": "C" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
+              { "id": "custom.lineWidth", "value": 1 }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "min", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 0, "y": 43, "w": 8, "h": 8 }
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Tendencia diaria - Humedad",
+      "description": "Promedio, mínimo y máximo diario por cama.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "avg_over_time(query_sensor_humedad_relativa_percent{cama_id=~\"$cama_id\"}[$__interval])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Prom",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "min_over_time(query_sensor_humedad_relativa_percent{cama_id=~\"$cama_id\"}[$__interval])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Mín",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max_over_time(query_sensor_humedad_relativa_percent{cama_id=~\"$cama_id\"}[$__interval])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Máx",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 70 },
+              { "color": "yellow", "value": 80 },
+              { "color": "red", "value": 95 }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byFrameRefID", "options": "B" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
+              { "id": "custom.lineWidth", "value": 1 }
+            ]
+          },
+          {
+            "matcher": { "id": "byFrameRefID", "options": "C" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
+              { "id": "custom.lineWidth", "value": 1 }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "min", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 8, "y": 43, "w": 8, "h": 8 }
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "Tendencia diaria - pH",
+      "description": "Promedio, mínimo y máximo diario por cama.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "avg_over_time(query_sensor_ph{cama_id=~\"$cama_id\"}[$__interval])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Prom",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "min_over_time(query_sensor_ph{cama_id=~\"$cama_id\"}[$__interval])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Mín",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max_over_time(query_sensor_ph{cama_id=~\"$cama_id\"}[$__interval])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Máx",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 2,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 6 },
+              { "color": "yellow", "value": 7.5 },
+              { "color": "red", "value": 9 }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byFrameRefID", "options": "B" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
+              { "id": "custom.lineWidth", "value": 1 }
+            ]
+          },
+          {
+            "matcher": { "id": "byFrameRefID", "options": "C" },
+            "properties": [
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [10, 10] } },
+              { "id": "custom.lineWidth", "value": 1 }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "min", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 16, "y": 43, "w": 8, "h": 8 }
     }
   ],
   "annotations": {
