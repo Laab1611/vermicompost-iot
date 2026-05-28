@@ -158,14 +158,14 @@
     {
       "id": 5,
       "type": "timeseries",
-      "title": "Calidad en el tiempo",
-      "description": "Evolucion del porcentaje de calidad (validas / total) en la ventana seleccionada.",
+      "title": "Tasa de error en el tiempo (%)",
+      "description": "Porcentaje de lecturas inválidas calculado sobre incrementos recientes dentro de la ventana seleccionada.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "(sum(query_monitoring_lecturas_validas) / (sum(query_monitoring_lecturas_validas) + sum(query_monitoring_lecturas_invalidas)) * 100) unless (sum(query_monitoring_lecturas_validas) + sum(query_monitoring_lecturas_invalidas) == 0) or vector(100)",
-          "legendFormat": "Calidad",
+          "expr": "100 * ((sum(clamp_min(delta(query_monitoring_lecturas_invalidas[$__rate_interval]), 0)) or vector(0)) / clamp_min((sum(clamp_min(delta(query_monitoring_lecturas_validas[$__rate_interval]), 0)) or vector(0)) + (sum(clamp_min(delta(query_monitoring_lecturas_invalidas[$__rate_interval]), 0)) or vector(0)), 1))",
+          "legendFormat": "Tasa de error",
           "refId": "A"
         }
       ],
@@ -185,9 +185,9 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "orange", "value": 90 },
-              { "color": "green", "value": 99 }
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 5 }
             ]
           }
         },
@@ -201,53 +201,98 @@
           "showLegend": true
         }
       },
-      "gridPos": { "x": 0, "y": 13, "w": 24, "h": 8 }
+      "gridPos": { "x": 0, "y": 13, "w": 8, "h": 8 }
     },
     {
       "id": 6,
-      "type": "bargauge",
-      "title": "Top 10 sensores con más errores",
+      "type": "table",
+      "title": "Top sensores con más errores",
       "description": "Sensores con mayor cantidad de lecturas inválidas acumuladas.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "topk(10, query_monitoring_errores_por_nodo_total) or label_replace(label_replace(0 * absent(topk(10, query_monitoring_errores_por_nodo_total)), \"codigo_nodo\", \"Sin sensores\", \"__name__\", \".*\"), \"cama_nombre\", \"con errores\", \"codigo_nodo\", \".*\")",
-          "legendFormat": "{{codigo_nodo}} - {{cama_nombre}}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
-          "decimals": 0,
-          "min": 0,
-          "custom": {
-            "orientation": "horizontal",
-            "displayMode": "gradient"
-          },
-          "color": { "mode": "continuous-BlPu" }
+          "custom": { "align": "center" }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Errores" },
+            "properties": [
+              { "id": "custom.width", "value": 100 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Sensor" },
+            "properties": [
+              { "id": "custom.width", "value": 220 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Cama" },
+            "properties": [
+              { "id": "custom.width", "value": 200 }
+            ]
+          }
+        ]
       },
-      "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true
-      },
-      "gridPos": { "x": 0, "y": 21, "w": 12, "h": 8 }
+      "options": { "showHeader": true },
+      "transformations": [
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [
+              { "field": "Value", "desc": true }
+            ]
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "cama_id": true,
+              "nodo_id": true,
+              "instance": true,
+              "job": true
+            },
+            "indexByName": {
+              "codigo_nodo": 0,
+              "cama_nombre": 1,
+              "Value": 2
+            },
+            "renameByName": {
+              "codigo_nodo": "Sensor",
+              "cama_nombre": "Cama",
+              "Value": "Errores"
+            }
+          }
+        }
+      ],
+      "gridPos": { "x": 8, "y": 13, "w": 8, "h": 8 }
     },
     {
       "id": 7,
-      "type": "bargauge",
-      "title": "Invalidaciones por causa",
-      "description": "Distribucion de causas de invalidacion de lecturas, ordenadas por frecuencia.",
+      "type": "piechart",
+      "title": "Distribución de errores por causa",
+      "description": "Proporción de lecturas inválidas agrupadas por causa de invalidación.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "query_monitoring_invalidaciones_por_causa_total or label_replace(0 * absent(query_monitoring_invalidaciones_por_causa_total), \"tipo_error\", \"Sin invalidaciones\", \"__name__\", \".*\")",
           "legendFormat": "{{tipo_error}}",
+          "instant": true,
           "refId": "A"
         }
       ],
@@ -255,21 +300,30 @@
         "defaults": {
           "unit": "none",
           "decimals": 0,
-          "min": 0,
-          "custom": {
-            "orientation": "horizontal",
-            "displayMode": "gradient"
-          },
-          "color": { "mode": "continuous-BlPu" }
+          "color": { "mode": "palette-classic" }
         },
         "overrides": []
       },
       "options": {
-        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true
+        "pieType": "donut",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "values": ["percent", "value"],
+          "showLegend": true
+        },
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "desc"
+        }
       },
-      "gridPos": { "x": 12, "y": 21, "w": 12, "h": 8 }
+      "transformations": [],
+      "gridPos": { "x": 16, "y": 13, "w": 8, "h": 8 }
     }
   ],
   "templating": { "list": [] },

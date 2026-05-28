@@ -50,7 +50,7 @@
         "defaults": { "unit": "none", "decimals": 0 },
         "overrides": []
       },
-      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 }
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }
     },
     {
       "id": 2,
@@ -69,7 +69,7 @@
         "defaults": { "unit": "none", "decimals": 0 },
         "overrides": []
       },
-      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 5 }
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }
     },
     {
       "id": 3,
@@ -99,7 +99,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 5 }
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 }
     },
     {
       "id": 4,
@@ -128,7 +128,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 5 }
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 }
     },
     {
       "id": 5,
@@ -230,11 +230,35 @@
       ],
       "fieldConfig": {
         "defaults": { "unit": "none", "decimals": 0, "custom": { "align": "center" } },
-        "overrides": [
+"overrides": [
           {
             "matcher": { "id": "byName", "options": "ID" },
             "properties": [
-              { "id": "custom.width", "value": 40 }
+              { "id": "custom.width", "value": 50 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Nombre" },
+            "properties": [
+              { "id": "custom.width", "value": 150 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Ubicación" },
+            "properties": [
+              { "id": "custom.width", "value": 220 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Variable" },
+            "properties": [
+              { "id": "custom.width", "value": 130 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Variable" },
+            "properties": [
+              { "id": "custom.width", "value": 130 }
             ]
           }
         ]
