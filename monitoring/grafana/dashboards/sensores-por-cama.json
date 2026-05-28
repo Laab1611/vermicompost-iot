@@ -24,11 +24,10 @@
         "sort": 1,
         "multi": true,
         "includeAll": true,
-        "allValue": ".*",
         "current": {
           "selected": true,
           "text": "All",
-          "value": ".*"
+          "value": "$__all"
         }
       }
     ]
@@ -42,7 +41,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(query_monitoring_total_camas) or vector(0)",
+          "expr": "count(count by (cama_id) (query_cama_info{cama_id=~\"${cama_id:regex}\"})) or vector(0)",
           "legendFormat": "Camas",
           "refId": "A"
         }
@@ -61,7 +60,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(query_monitoring_nodos_conectados) or vector(0)",
+          "expr": "count(count by (nodo_id) (query_monitoring_nodo_conectado{cama_id=~\"${cama_id:regex}\"} == 1)) or vector(0)",
           "legendFormat": "Conectados",
           "refId": "A"
         }
@@ -80,7 +79,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(query_monitoring_nodos_desconectados) or vector(0)",
+          "expr": "count(count by (nodo_id) (query_monitoring_nodo_conectado{cama_id=~\"${cama_id:regex}\"} == 0)) or vector(0)",
           "legendFormat": "Desconectados",
           "refId": "A"
         }
@@ -110,7 +109,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(query_monitoring_lecturas_invalidas) or vector(0)",
+          "expr": "sum(query_monitoring_errores_por_nodo_total{cama_id=~\"${cama_id:regex}\"}) or vector(0)",
           "legendFormat": "Inválidas",
           "refId": "A"
         }
@@ -154,12 +153,12 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": { "custom": { "align": "center" } },
         "overrides": [
           {
             "matcher": { "id": "byName", "options": "ID" },
             "properties": [
-              { "id": "custom.width", "value": 60 }
+              { "id": "custom.width", "value": 40 }
             ]
           },
           {
@@ -193,9 +192,25 @@
               "ubicacion": "Ubicación"
             }
           }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "fieldName": "ID",
+                "config": {
+                  "id": "regex",
+                  "options": { "value": "${cama_id:regex}" }
+                }
+              }
+            ],
+            "type": "include",
+            "match": "any"
+          }
         }
       ],
-      "gridPos": { "x": 0, "y": 5, "w": 12, "h": 7 }
+      "gridPos": { "x": 0, "y": 5, "w": 12, "h": 5 }
     },
     {
       "id": 6,
@@ -206,7 +221,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum by (cama_id, cama_nombre, ubicacion, variable) (label_replace(query_cama_info{ubicacion=~\".+\"} unless on(cama_id,cama_nombre) query_sensor_temperatura_celsius, \"variable\", \"Temperatura\", \"cama_id\", \".*\") or label_replace(query_cama_info{ubicacion=~\".+\"} unless on(cama_id,cama_nombre) query_sensor_humedad_relativa_percent, \"variable\", \"Humedad relativa\", \"cama_id\", \".*\") or label_replace(query_cama_info{ubicacion=~\".+\"} unless on(cama_id,cama_nombre) query_sensor_ph, \"variable\", \"pH\", \"cama_id\", \".*\"))",
+          "expr": "sum by (cama_id, cama_nombre, ubicacion, variable) (label_replace(query_cama_info{ubicacion=~\".+\", cama_id=~\"${cama_id:regex}\"} unless on(cama_id,cama_nombre) query_sensor_temperatura_celsius, \"variable\", \"Temperatura\", \"cama_id\", \".*\") or label_replace(query_cama_info{ubicacion=~\".+\", cama_id=~\"${cama_id:regex}\"} unless on(cama_id,cama_nombre) query_sensor_humedad_relativa_percent, \"variable\", \"Humedad relativa\", \"cama_id\", \".*\") or label_replace(query_cama_info{ubicacion=~\".+\", cama_id=~\"${cama_id:regex}\"} unless on(cama_id,cama_nombre) query_sensor_ph, \"variable\", \"pH\", \"cama_id\", \".*\"))",
           "format": "table",
           "instant": true,
           "legendFormat": "{{cama_nombre}} (cama {{cama_id}})",
@@ -214,8 +229,15 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "none", "decimals": 0 },
-        "overrides": []
+        "defaults": { "unit": "none", "decimals": 0, "custom": { "align": "center" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "ID" },
+            "properties": [
+              { "id": "custom.width", "value": 40 }
+            ]
+          }
+        ]
       },
       "options": { "showHeader": true },
       "transformations": [
@@ -246,18 +268,113 @@
           }
         }
       ],
-      "gridPos": { "x": 0, "y": 20, "w": 24, "h": 7 }
+      "gridPos": { "x": 8, "y": 10, "w": 8, "h": 5 }
+    },
+    {
+      "id": 18,
+      "type": "table",
+      "title": "Estado de variables por cama",
+      "description": "Disponibilidad de variables de sensor por cama. Verde: datos presentes en Prometheus. Rojo: sin datos registrados.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "label_replace(\n  (count by (cama_id, cama_nombre) (query_sensor_temperatura_celsius{cama_id=~\"${cama_id:regex}\"}) * 0 + 1)\n  or\n  (count by (cama_id, cama_nombre) (query_cama_info{cama_id=~\"${cama_id:regex}\"}) * 0),\n  \"variable\", \"Temperatura\", \"cama_id\", \".*\"\n)\nor\nlabel_replace(\n  (count by (cama_id, cama_nombre) (query_sensor_humedad_relativa_percent{cama_id=~\"${cama_id:regex}\"}) * 0 + 1)\n  or\n  (count by (cama_id, cama_nombre) (query_cama_info{cama_id=~\"${cama_id:regex}\"}) * 0),\n  \"variable\", \"Humedad relativa\", \"cama_id\", \".*\"\n)\nor\nlabel_replace(\n  (count by (cama_id, cama_nombre) (query_sensor_ph{cama_id=~\"${cama_id:regex}\"}) * 0 + 1)\n  or\n  (count by (cama_id, cama_nombre) (query_cama_info{cama_id=~\"${cama_id:regex}\"}) * 0),\n  \"variable\", \"pH\", \"cama_id\", \".*\"\n)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "center" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [
+              { "id": "custom.width", "value": 100 },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": { "text": "Disponible", "color": "green" },
+                      "0": { "text": "Faltante", "color": "red" }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "cama_id" },
+            "properties": [
+              { "id": "custom.width", "value": 40 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "cama_nombre" },
+            "properties": [
+              { "id": "custom.width", "value": 200 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "variable" },
+            "properties": [
+              { "id": "custom.width", "value": 140 }
+            ]
+          }
+        ]
+      },
+      "options": { "showHeader": true },
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {}
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [
+              { "field": "cama_id", "desc": false }
+            ]
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "cama_id": 0,
+              "cama_nombre": 1,
+              "variable": 2,
+              "Value": 3
+            },
+            "renameByName": {
+              "cama_id": "Cama",
+              "cama_nombre": "Nombre",
+              "variable": "Variable",
+              "Value": "Estado"
+            }
+          }
+        }
+      ],
+      "gridPos": { "x": 16, "y": 10, "w": 8, "h": 5 }
     },
     {
       "id": 7,
       "type": "timeseries",
       "title": "Temperatura por cama (°C)",
-      "description": "Historia del gauge Prometheus de la última lectura promedio por cama. Solo incluye camas con lecturas de temperatura. No es histórico crudo de base de datos.",
+      "description": "Solo muestra camas con lecturas válidas disponibles en Prometheus. Si la cama seleccionada no muestra datos, revisar el panel de Lecturas faltantes por cama.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "query_sensor_temperatura_celsius{cama_id=~\"$cama_id\"}",
+          "expr": "query_sensor_temperatura_celsius{cama_id=~\"${cama_id:regex}\"}",
           "legendFormat": "{{cama_nombre}} (cama {{cama_id}})",
           "refId": "A"
         }
@@ -293,18 +410,18 @@
           "showLegend": true
         }
       },
-      "gridPos": { "x": 0, "y": 27, "w": 8, "h": 8 }
+      "gridPos": { "x": 0, "y": 15, "w": 8, "h": 8 }
     },
     {
       "id": 8,
       "type": "timeseries",
       "title": "Humedad por cama (%)",
-      "description": "Historia del gauge Prometheus de la última lectura promedio por cama. Solo incluye camas con lecturas de humedad. No es histórico crudo de base de datos.",
+      "description": "Solo muestra camas con lecturas válidas disponibles en Prometheus. Si la cama seleccionada no muestra datos, revisar el panel de Lecturas faltantes por cama.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "query_sensor_humedad_relativa_percent{cama_id=~\"$cama_id\"}",
+          "expr": "query_sensor_humedad_relativa_percent{cama_id=~\"${cama_id:regex}\"}",
           "legendFormat": "{{cama_nombre}} (cama {{cama_id}})",
           "refId": "A"
         }
@@ -340,18 +457,18 @@
           "showLegend": true
         }
       },
-      "gridPos": { "x": 8, "y": 27, "w": 8, "h": 8 }
+      "gridPos": { "x": 8, "y": 15, "w": 8, "h": 8 }
     },
     {
       "id": 9,
       "type": "timeseries",
       "title": "pH por cama",
-      "description": "Historia del gauge Prometheus de la última lectura promedio por cama. Solo incluye camas con lecturas de pH. No es histórico crudo de base de datos.",
+      "description": "Solo muestra camas con lecturas válidas disponibles en Prometheus. Si la cama seleccionada no muestra datos, revisar el panel de Lecturas faltantes por cama.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "query_sensor_ph{cama_id=~\"$cama_id\"}",
+          "expr": "query_sensor_ph{cama_id=~\"${cama_id:regex}\"}",
           "legendFormat": "{{cama_nombre}} (cama {{cama_id}})",
           "refId": "A"
         }
@@ -387,18 +504,18 @@
           "showLegend": true
         }
       },
-      "gridPos": { "x": 16, "y": 27, "w": 8, "h": 8 }
+      "gridPos": { "x": 16, "y": 15, "w": 8, "h": 8 }
     },
     {
       "id": 10,
       "type": "gauge",
       "title": "Temperatura actual por cama (°C)",
-      "description": "Valor actual por cama para camas con lecturas de temperatura.",
+      "description": "Solo muestra camas con lecturas válidas disponibles en Prometheus. Si la cama seleccionada no muestra datos, revisar el panel de Lecturas faltantes por cama.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "query_sensor_temperatura_celsius{cama_id=~\"$cama_id\"}",
+          "expr": "query_sensor_temperatura_celsius{cama_id=~\"${cama_id:regex}\"}",
           "legendFormat": "{{cama_nombre}} ({{cama_id}})",
           "refId": "A"
         }
@@ -427,18 +544,18 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "gridPos": { "x": 0, "y": 35, "w": 8, "h": 8 }
+      "gridPos": { "x": 0, "y": 23, "w": 8, "h": 6 }
     },
     {
       "id": 11,
       "type": "gauge",
       "title": "Humedad actual por cama (%)",
-      "description": "Valor actual por cama para camas con lecturas de humedad.",
+      "description": "Solo muestra camas con lecturas válidas disponibles en Prometheus. Si la cama seleccionada no muestra datos, revisar el panel de Lecturas faltantes por cama.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "query_sensor_humedad_relativa_percent{cama_id=~\"$cama_id\"}",
+          "expr": "query_sensor_humedad_relativa_percent{cama_id=~\"${cama_id:regex}\"}",
           "legendFormat": "{{cama_nombre}} ({{cama_id}})",
           "refId": "A"
         }
@@ -465,18 +582,18 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "gridPos": { "x": 8, "y": 35, "w": 8, "h": 8 }
+      "gridPos": { "x": 8, "y": 23, "w": 8, "h": 6 }
     },
     {
       "id": 12,
       "type": "gauge",
       "title": "pH actual por cama",
-      "description": "Valor actual por cama para camas con lecturas de pH.",
+      "description": "Solo muestra camas con lecturas válidas disponibles en Prometheus. Si la cama seleccionada no muestra datos, revisar el panel de Lecturas faltantes por cama.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "query_sensor_ph{cama_id=~\"$cama_id\"}",
+          "expr": "query_sensor_ph{cama_id=~\"${cama_id:regex}\"}",
           "legendFormat": "{{cama_nombre}} ({{cama_id}})",
           "refId": "A"
         }
@@ -503,7 +620,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "gridPos": { "x": 16, "y": 35, "w": 8, "h": 8 }
+      "gridPos": { "x": 16, "y": 23, "w": 8, "h": 6 }
     },
     {
       "id": 13,
@@ -523,18 +640,18 @@
           "columns": [
             { "selector": "nodo_id", "text": "ID", "type": "number" },
             { "selector": "codigo_nodo", "text": "Código", "type": "string" },
-            { "selector": "cama_id", "text": "Cama", "type": "number" },
+            { "selector": "cama_id", "text": "Cama", "type": "string" },
             { "selector": "ultima_lectura_recibida", "text": "Última Lectura", "type": "string" }
           ]
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": { "custom": { "align": "center" } },
         "overrides": [
           {
             "matcher": { "id": "byName", "options": "ID" },
             "properties": [
-              { "id": "custom.width", "value": 60 }
+              { "id": "custom.width", "value": 40 }
             ]
           },
           {
@@ -569,8 +686,25 @@
         ]
       },
       "options": { "showHeader": true },
-      "transformations": [],
-      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 8 }
+"transformations": [
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "fieldName": "Cama",
+                "config": {
+                  "id": "regex",
+                  "options": { "value": "${cama_id:regex}" }
+                }
+              }
+            ],
+            "type": "include",
+            "match": "any"
+          }
+        }
+      ],
+      "gridPos": { "x": 0, "y": 10, "w": 8, "h": 5 }
     },
     {
       "id": 14,
@@ -609,7 +743,7 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": { "custom": { "align": "center" } },
         "overrides": [
           {
             "matcher": { "id": "byName", "options": "Estado" },
@@ -640,7 +774,7 @@
           {
             "matcher": { "id": "byName", "options": "ID" },
             "properties": [
-              { "id": "custom.width", "value": 60 }
+              { "id": "custom.width", "value": 40 }
             ]
           },
           {
@@ -693,39 +827,55 @@
             },
             "renameByName": {
               "nodo_id": "ID",
-              "codigo_nodo A": "Código",
+              "codigo_nodo A": "C\u00f3digo",
               "cama_id A": "Cama",
-              "ultima_lectura_recibida A": "Última lectura",
+              "ultima_lectura_recibida A": "\u00daltima lectura",
               "disconnected_id B": "Estado"
             }
           }
+        },
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "fieldName": "Cama",
+                "config": {
+                  "id": "regex",
+                  "options": { "value": "${cama_id:regex}" }
+                }
+              }
+            ],
+            "type": "include",
+            "match": "any"
+          }
         }
       ],
-      "gridPos": { "x": 12, "y": 5, "w": 12, "h": 7 }
+      "gridPos": { "x": 12, "y": 5, "w": 12, "h": 5 }
     },
     {
       "id": 15,
       "type": "timeseries",
-      "title": "Tendencia diaria - Temperatura",
-      "description": "Promedio, mínimo y máximo diario por cama.",
+      "title": "Estadísticas por ventana - Temperatura",
+      "description": "Promedio, mínimo y máximo calculados sobre una ventana de 1 hora para cada punto del rango temporal seleccionado en Grafana.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "avg_over_time(query_sensor_temperatura_celsius{cama_id=~\"$cama_id\"}[$__interval])",
-          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Prom",
+          "expr": "avg_over_time(query_sensor_temperatura_celsius{cama_id=~\"${cama_id:regex}\"}[1h])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Promedio 1h",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "min_over_time(query_sensor_temperatura_celsius{cama_id=~\"$cama_id\"}[$__interval])",
-          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Mín",
+          "expr": "min_over_time(query_sensor_temperatura_celsius{cama_id=~\"${cama_id:regex}\"}[1h])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Mínimo 1h",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "max_over_time(query_sensor_temperatura_celsius{cama_id=~\"$cama_id\"}[$__interval])",
-          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Máx",
+          "expr": "max_over_time(query_sensor_temperatura_celsius{cama_id=~\"${cama_id:regex}\"}[1h])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Máximo 1h",
           "refId": "C"
         }
       ],
@@ -769,37 +919,37 @@
       },
       "options": {
         "legend": {
-          "calcs": ["last", "min", "max"],
+          "calcs": ["last"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
         }
       },
-      "gridPos": { "x": 0, "y": 43, "w": 8, "h": 8 }
+      "gridPos": { "x": 0, "y": 29, "w": 8, "h": 10 }
     },
     {
       "id": 16,
       "type": "timeseries",
-      "title": "Tendencia diaria - Humedad",
-      "description": "Promedio, mínimo y máximo diario por cama.",
+      "title": "Estadísticas por ventana - Humedad",
+      "description": "Promedio, mínimo y máximo calculados sobre una ventana de 1 hora para cada punto del rango temporal seleccionado en Grafana.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "avg_over_time(query_sensor_humedad_relativa_percent{cama_id=~\"$cama_id\"}[$__interval])",
-          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Prom",
+          "expr": "avg_over_time(query_sensor_humedad_relativa_percent{cama_id=~\"${cama_id:regex}\"}[1h])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Promedio 1h",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "min_over_time(query_sensor_humedad_relativa_percent{cama_id=~\"$cama_id\"}[$__interval])",
-          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Mín",
+          "expr": "min_over_time(query_sensor_humedad_relativa_percent{cama_id=~\"${cama_id:regex}\"}[1h])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Mínimo 1h",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "max_over_time(query_sensor_humedad_relativa_percent{cama_id=~\"$cama_id\"}[$__interval])",
-          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Máx",
+          "expr": "max_over_time(query_sensor_humedad_relativa_percent{cama_id=~\"${cama_id:regex}\"}[1h])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Máximo 1h",
           "refId": "C"
         }
       ],
@@ -843,37 +993,37 @@
       },
       "options": {
         "legend": {
-          "calcs": ["last", "min", "max"],
+          "calcs": ["last"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
         }
       },
-      "gridPos": { "x": 8, "y": 43, "w": 8, "h": 8 }
+      "gridPos": { "x": 8, "y": 29, "w": 8, "h": 10 }
     },
     {
       "id": 17,
       "type": "timeseries",
-      "title": "Tendencia diaria - pH",
-      "description": "Promedio, mínimo y máximo diario por cama.",
+      "title": "Estadísticas por ventana - pH",
+      "description": "Promedio, mínimo y máximo calculados sobre una ventana de 1 hora para cada punto del rango temporal seleccionado en Grafana.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "avg_over_time(query_sensor_ph{cama_id=~\"$cama_id\"}[$__interval])",
-          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Prom",
+          "expr": "avg_over_time(query_sensor_ph{cama_id=~\"${cama_id:regex}\"}[1h])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Promedio 1h",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "min_over_time(query_sensor_ph{cama_id=~\"$cama_id\"}[$__interval])",
-          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Mín",
+          "expr": "min_over_time(query_sensor_ph{cama_id=~\"${cama_id:regex}\"}[1h])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Mínimo 1h",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "max_over_time(query_sensor_ph{cama_id=~\"$cama_id\"}[$__interval])",
-          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Máx",
+          "expr": "max_over_time(query_sensor_ph{cama_id=~\"${cama_id:regex}\"}[1h])",
+          "legendFormat": "{{cama_nombre}} ({{cama_id}}) - Máximo 1h",
           "refId": "C"
         }
       ],
@@ -917,13 +1067,13 @@
       },
       "options": {
         "legend": {
-          "calcs": ["last", "min", "max"],
+          "calcs": ["last"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
         }
       },
-      "gridPos": { "x": 16, "y": 43, "w": 8, "h": 8 }
+      "gridPos": { "x": 16, "y": 29, "w": 8, "h": 10 }
     }
   ],
   "annotations": {
