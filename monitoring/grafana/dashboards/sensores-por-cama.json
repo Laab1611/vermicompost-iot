@@ -524,7 +524,7 @@
             { "selector": "nodo_id", "text": "ID", "type": "number" },
             { "selector": "codigo_nodo", "text": "Código", "type": "string" },
             { "selector": "cama_id", "text": "Cama", "type": "number" },
-            { "selector": "ultima_lectura_recibida", "text": "Última Lectura", "type": "timestamp" }
+            { "selector": "ultima_lectura_recibida", "text": "Última Lectura", "type": "string" }
           ]
         }
       ],
@@ -552,7 +552,18 @@
           {
             "matcher": { "id": "byName", "options": "Última Lectura" },
             "properties": [
-              { "id": "custom.width", "value": 210 }
+              { "id": "custom.width", "value": 210 },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "null": { "text": "Sin lectura registrada", "color": "gray" }
+                    }
+                  }
+                ]
+              }
             ]
           }
         ]
@@ -647,7 +658,18 @@
           {
             "matcher": { "id": "byName", "options": "Última lectura" },
             "properties": [
-              { "id": "custom.width", "value": 210 }
+              { "id": "custom.width", "value": 210 },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "null": { "text": "Sin lectura registrada", "color": "gray" }
+                    }
+                  }
+                ]
+              }
             ]
           }
         ]
