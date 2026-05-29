@@ -17,12 +17,13 @@
       "id": 1,
       "type": "stat",
       "title": "Targets UP",
+      "description": "Targets de scrape que responden correctamente (5: 3 microservicios + Prometheus + Grafana).",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "sum(up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"})",
-          "legendFormat": "Targets UP",
+          "legendFormat": "UP",
           "refId": "A"
         }
       ],
@@ -41,75 +42,18 @@
         },
         "overrides": []
       },
-      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 }
+      "gridPos": { "x": 0, "y": 0, "w": 5, "h": 5 }
     },
     {
       "id": 2,
       "type": "stat",
-      "title": "Prometheus reload OK",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "max(prometheus_config_last_reload_successful) or vector(0)",
-          "legendFormat": "Reload OK",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "decimals": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "value": 0, "color": "red" },
-              { "value": 1, "color": "green" }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 5 }
-    },
-    {
-      "id": 3,
-      "type": "stat",
-      "title": "Alertas activas",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(ALERTS{alertstate=\"firing\"}) or vector(0)",
-          "legendFormat": "Firing",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "decimals": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "value": 0, "color": "green" },
-              { "value": 1, "color": "red" }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 5 }
-    },
-    {
-      "id": 4,
-      "type": "stat",
       "title": "Scrapes fallidos",
+      "description": "Targets de scrape que no responden (up=0). Corresponde al complemento de Targets UP.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"} == 0) or vector(0)",
+          "expr": "sum(up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"} == bool 0) or vector(0)",
           "legendFormat": "Down",
           "refId": "A"
         }
@@ -121,38 +65,173 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "value": 0, "color": "green" },
+              { "value": null, "color": "green" },
               { "value": 1, "color": "red" }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 5 }
+      "gridPos": { "x": 5, "y": 0, "w": 4, "h": 5 }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Config Prometheus OK",
+      "description": "Indica si la ultima recarga de configuracion de Prometheus fue exitosa.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(prometheus_config_last_reload_successful) or vector(0)",
+          "legendFormat": "Reload",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": { "text": "OK" },
+                "0": { "text": "FAIL" }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "red" },
+              { "value": 1, "color": "green" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 9, "y": 0, "w": 5, "h": 5 }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Series activas TSDB",
+      "description": "Numero de series de tiempo activas en el TSDB de Prometheus. Indicador de cardinalidad de metricas.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "avg(prometheus_tsdb_head_series) or vector(0)",
+          "legendFormat": "Series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 10000, "color": "orange" },
+              { "value": 50000, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 14, "y": 0, "w": 5, "h": 5 }
     },
     {
       "id": 5,
-      "type": "timeseries",
-      "title": "Estado de scrape por target",
+      "type": "stat",
+      "title": "Ingesta TSDB (samples/s)",
+      "description": "Tasa de samples agregados al TSDB. Indica carga de escritura en Prometheus.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "avg(rate(prometheus_tsdb_head_samples_appended_total{type!=\"histogram\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "samples/s",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 19, "y": 0, "w": 5, "h": 5 }
+    },
+    {
+      "id": 6,
+      "type": "status-history",
+      "title": "Historial de scrape por target",
+      "description": "Estado de cada target monitoreado (UP=verde, DOWN=rojo) en el tiempo. Cada fila representa un job de scrape.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"}",
           "legendFormat": "{{job}}",
+          "interval": "5m",
           "refId": "A"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "none", "decimals": 0, "min": 0, "max": 1 },
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "min": 0,
+          "max": 1,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": { "text": "UP" },
+                "0": { "text": "DOWN" }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "red" },
+              { "value": 1, "color": "green" }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
         "overrides": []
+      },
+      "options": {
+        "colWidth": 0.7,
+        "rowHeight": 0.6,
+        "showValue": "never",
+        "mergeValues": true,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
       },
       "gridPos": { "x": 0, "y": 5, "w": 12, "h": 8 }
     },
     {
-      "id": 6,
+      "id": 7,
       "type": "timeseries",
-      "title": "Duración de scrape (ms)",
+      "title": "Duracion de scrape (ms)",
+      "description": "Tiempo que tarda Prometheus en recolectar metricas de cada target.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -163,48 +242,304 @@
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "ms", "decimals": 2 },
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "auto"
+          }
+        },
         "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
       },
       "gridPos": { "x": 12, "y": 5, "w": 12, "h": 8 }
     },
     {
-      "id": 7,
+      "id": 8,
       "type": "timeseries",
-      "title": "Muestras recolectadas por scrape",
+      "title": "Ingesta TSDB (samples/s)",
+      "description": "Tasa de samples agregados al TSDB de Prometheus en el tiempo.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "scrape_samples_scraped{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"}",
+          "expr": "avg(rate(prometheus_tsdb_head_samples_appended_total{type!=\"histogram\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "Samples/s",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 1,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 0, "y": 13, "w": 12, "h": 8 }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Series activas TSDB",
+      "description": "Evolucion de series de tiempo activas en Prometheus. Crecimiento sostenido puede indicar cardinalidad excesiva.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "avg(prometheus_tsdb_head_series) or vector(0)",
+          "legendFormat": "Series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 12, "y": 13, "w": 12, "h": 8 }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Memoria Prometheus",
+      "description": "Memoria RSS del proceso Prometheus en bytes.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "avg(process_resident_memory_bytes{job=\"prometheus\"}) or vector(0)",
+          "legendFormat": "RSS",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 209715200, "color": "orange" },
+              { "value": 524288000, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 0, "y": 21, "w": 6, "h": 5 }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Goroutines Prometheus",
+      "description": "Numero de goroutines activas en Prometheus. Indicador de concurrencia interna.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "avg(go_goroutines{job=\"prometheus\"}) or vector(0)",
+          "legendFormat": "Goroutines",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 100, "color": "orange" },
+              { "value": 500, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 6, "y": 21, "w": 6, "h": 5 }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Memoria Grafana",
+      "description": "Memoria RSS del proceso Grafana en bytes.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "avg(process_resident_memory_bytes{job=\"grafana\"}) or vector(0)",
+          "legendFormat": "RSS",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 524288000, "color": "orange" },
+              { "value": 1073741824, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 12, "y": 21, "w": 6, "h": 5 }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Goroutines Grafana",
+      "description": "Numero de goroutines activas en Grafana.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "avg(go_goroutines{job=\"grafana\"}) or vector(0)",
+          "legendFormat": "Goroutines",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 200, "color": "orange" },
+              { "value": 500, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 18, "y": 21, "w": 6, "h": 5 }
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Memoria en el tiempo",
+      "description": "Memoria RSS de Prometheus y Grafana en la ventana de tiempo.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "process_resident_memory_bytes{job=~\"prometheus|grafana\"}",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "none", "decimals": 0 },
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "auto"
+          }
+        },
         "overrides": []
       },
-      "gridPos": { "x": 0, "y": 13, "w": 12, "h": 8 }
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 0, "y": 26, "w": 12, "h": 8 }
     },
     {
-      "id": 8,
+      "id": 15,
       "type": "timeseries",
-      "title": "Prometheus TSDB muestras agregadas",
+      "title": "Goroutines en el tiempo",
+      "description": "Goroutines activas en Prometheus y Grafana en la ventana de tiempo.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "prometheus_tsdb_head_samples_appended_total",
-          "legendFormat": "Muestras agregadas",
+          "expr": "go_goroutines{job=~\"prometheus|grafana\"}",
+          "legendFormat": "{{job}}",
           "refId": "A"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "none", "decimals": 0 },
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "auto"
+          }
+        },
         "overrides": []
       },
-      "gridPos": { "x": 12, "y": 13, "w": 12, "h": 8 }
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 12, "y": 26, "w": 12, "h": 8 }
     }
   ],
   "templating": { "list": [] },

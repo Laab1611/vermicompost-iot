@@ -16,7 +16,50 @@
     {
       "id": 1,
       "type": "stat",
-      "title": "Servicios disponibles",
+      "title": "Estado global del sistema",
+      "description": "Puntaje compuesto: 3 = SANO, 2 = ATENCION, 1 = CRITICO. Considera servicios caidos, alertas activas, nodos desconectados, tasa de datos invalida, lag Redis y error rate API.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "clamp_min(3 - (((5 - (sum(up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"}) or vector(0))) >= bool 1) + ((sum(ALERTS{alertstate=\"firing\"}) or vector(0)) >= bool 1) + ((sum(query_monitoring_nodos_desconectados) or vector(0)) >= bool 3) + ((100 * (sum(query_monitoring_lecturas_invalidas) or vector(0)) / clamp_min((sum(query_monitoring_lecturas_validas) + sum(query_monitoring_lecturas_invalidas)) or vector(1), 1)) >= bool 5) + ((max(ingestion_redis_consumer_lag) or vector(0)) >= bool 500) + ((100 * (sum(rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\",status=~\"5..\"}[$__rate_interval])) or vector(0)) / clamp_min((sum(rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval])) or vector(0)), 0.001)) >= bool 5)), 1)",
+          "legendFormat": "Score",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "red" },
+              { "value": 2, "color": "orange" },
+              { "value": 3, "color": "green" }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "3": { "text": "SANO" },
+                "2": { "text": "ATENCION" },
+                "1": { "text": "CRITICO" }
+              }
+            }
+          ],
+          "colorMode": "background"
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 6 }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Servicios UP",
+      "description": "Servicios del stack monitoreados via Prometheus que responden correctamente: 3 microservicios + Prometheus + Grafana.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -41,50 +84,43 @@
         },
         "overrides": []
       },
-      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 }
-    },
-    {
-      "id": 2,
-      "type": "stat",
-      "title": "Camas registradas",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(query_monitoring_total_camas) or vector(0)",
-          "legendFormat": "Camas",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": { "unit": "none", "decimals": 0 },
-        "overrides": []
-      },
-      "gridPos": { "x": 6, "y": 0, "w": 5, "h": 5 }
+      "gridPos": { "x": 6, "y": 0, "w": 4, "h": 6 }
     },
     {
       "id": 3,
       "type": "stat",
-      "title": "Nodos registrados",
+      "title": "Alertas activas",
+      "description": "Alertas en estado firing actualmente. Cualquier alerta activa requiere atencion inmediata.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(query_monitoring_total_nodos) or vector(0)",
-          "legendFormat": "Nodos",
+          "expr": "sum(ALERTS{alertstate=\"firing\"}) or vector(0)",
+          "legendFormat": "Firing",
           "refId": "A"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "none", "decimals": 0 },
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 1, "color": "red" }
+            ]
+          }
+        },
         "overrides": []
       },
-      "gridPos": { "x": 11, "y": 0, "w": 5, "h": 5 }
+      "gridPos": { "x": 10, "y": 0, "w": 4, "h": 6 }
     },
     {
       "id": 4,
       "type": "stat",
       "title": "Nodos desconectados",
+      "description": "Sensores fisicos sin conexion activa en el momento de la ultima verificacion.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -103,24 +139,147 @@
             "steps": [
               { "value": 0, "color": "green" },
               { "value": 1, "color": "orange" },
+              { "value": 3, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 14, "y": 0, "w": 5, "h": 6 }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Tasa datos invalidos",
+      "description": "Porcentaje de lecturas marcadas como invalidas sobre el total registrado. Indica calidad general de los datos del dominio IoT.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "100 * (sum(query_monitoring_lecturas_invalidas) or vector(0)) / clamp_min((sum(query_monitoring_lecturas_validas) + sum(query_monitoring_lecturas_invalidas)) or vector(1), 1)",
+          "legendFormat": "Tasa invalida",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 1, "color": "orange" },
               { "value": 5, "color": "red" }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 5 }
+      "gridPos": { "x": 19, "y": 0, "w": 5, "h": 6 }
     },
     {
-      "id": 5,
+      "id": 6,
       "type": "stat",
-      "title": "Lecturas inválidas",
+      "title": "Camas registradas",
+      "description": "Total de camas de vermicompostaje registradas en el sistema.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(query_monitoring_total_camas) or vector(0)",
+          "legendFormat": "Camas",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "decimals": 0 },
+        "overrides": []
+      },
+      "gridPos": { "x": 0, "y": 6, "w": 4, "h": 5 }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Nodos registrados",
+      "description": "Total de nodos o sensores fisicos registrados en el sistema.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(query_monitoring_total_nodos) or vector(0)",
+          "legendFormat": "Nodos",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "decimals": 0 },
+        "overrides": []
+      },
+      "gridPos": { "x": 4, "y": 6, "w": 4, "h": 5 }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Nodos conectados",
+      "description": "Sensores con conexion activa verificada en la ultima ventana de monitoreo.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(query_monitoring_nodos_conectados) or vector(0)",
+          "legendFormat": "Conectados",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "red" },
+              { "value": 1, "color": "orange" },
+              { "value": 2, "color": "green" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 8, "y": 6, "w": 4, "h": 5 }
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Lecturas validas",
+      "description": "Total acumulado de lecturas de sensor marcadas como validas desde el inicio del monitoreo.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(query_monitoring_lecturas_validas) or vector(0)",
+          "legendFormat": "Validas",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "none", "decimals": 0 },
+        "overrides": []
+      },
+      "gridPos": { "x": 12, "y": 6, "w": 4, "h": 5 }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Lecturas invalidas",
+      "description": "Total acumulado de lecturas rechazadas por validacion. Alta correlacion con nodos desconectados o fallas de sensor.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "sum(query_monitoring_lecturas_invalidas) or vector(0)",
-          "legendFormat": "Inválidas",
+          "legendFormat": "Invalidas",
           "refId": "A"
         }
       ],
@@ -138,31 +297,201 @@
         },
         "overrides": []
       },
-      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 5 }
+      "gridPos": { "x": 16, "y": 6, "w": 4, "h": 5 }
     },
     {
-      "id": 6,
-      "type": "timeseries",
-      "title": "Disponibilidad por servicio",
+      "id": 11,
+      "type": "stat",
+      "title": "Validez de datos",
+      "description": "Proporcion de lecturas validas respecto al total. Objetivo: >= 99%.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "avg_over_time(up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"}[5m])",
+          "expr": "100 * (sum(query_monitoring_lecturas_validas) or vector(0)) / clamp_min((sum(query_monitoring_lecturas_validas) + sum(query_monitoring_lecturas_invalidas)) or vector(1), 1) unless (sum(query_monitoring_lecturas_validas) + sum(query_monitoring_lecturas_invalidas) == 0) or vector(100)",
+          "legendFormat": "Validez",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "red" },
+              { "value": 95, "color": "orange" },
+              { "value": 99, "color": "green" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 20, "y": 6, "w": 4, "h": 5 }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Error rate API funcional",
+      "description": "Tasa de respuestas HTTP 5xx en endpoints funcionales (excluye /health y /metrics).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "100 * (sum(rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\",status=~\"5..\"}[$__rate_interval])) or vector(0)) / clamp_min((sum(rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval])) or vector(0)), 0.001)",
+          "legendFormat": "Error 5xx",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 1, "color": "orange" },
+              { "value": 5, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 0, "y": 11, "w": 6, "h": 5 }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Latencia p95 API funcional",
+      "description": "Percentil 95 de latencia en endpoints funcionales. Umbral: 3000 ms atencion, 5000 ms critico.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "((histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval]))) * 1000) and on() (sum(rate(http_request_duration_seconds_count{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval])) > 0)) or vector(0)",
+          "legendFormat": "p95",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 3000, "color": "orange" },
+              { "value": 5000, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 6, "y": 11, "w": 6, "h": 5 }
+    },
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "Lag consumidor Redis",
+      "description": "Diferencia entre el ultimo mensaje publicado en el stream y el ultimo confirmado por el consumidor. Valores altos indican acumulacion.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(ingestion_redis_consumer_lag) or vector(0)",
+          "legendFormat": "Lag",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 250, "color": "orange" },
+              { "value": 500, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 12, "y": 11, "w": 6, "h": 5 }
+    },
+    {
+      "id": 15,
+      "type": "stat",
+      "title": "Backlog Redis (stream)",
+      "description": "Longitud total del stream Redis. Representa mensajes no procesados pendientes en la cola.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "max(ingestion_redis_stream_length) or vector(0)",
+          "legendFormat": "Stream length",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": null, "color": "green" },
+              { "value": 5000, "color": "orange" },
+              { "value": 10000, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "x": 18, "y": 11, "w": 6, "h": 5 }
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Disponibilidad por servicio",
+      "description": "Promedio de disponibilidad (up) en la ventana de tiempo para cada servicio del stack.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "avg_over_time(up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana\"}[$__rate_interval])",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "percentunit", "decimals": 2, "min": 0, "max": 1 },
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2,
+          "min": 0,
+          "max": 1
+        },
         "overrides": []
       },
-      "gridPos": { "x": 0, "y": 5, "w": 12, "h": 8 }
+      "options": {
+        "legend": {
+          "calcs": ["last", "mean", "min"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 }
     },
     {
-      "id": 7,
+      "id": 17,
       "type": "timeseries",
-      "title": "Nodos conectados y desconectados",
+      "title": "Conectividad de nodos",
+      "description": "Evolucion de nodos conectados y desconectados en la ventana de tiempo seleccionada.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -182,38 +511,92 @@
         "defaults": { "unit": "none", "decimals": 0 },
         "overrides": []
       },
-      "gridPos": { "x": 12, "y": 5, "w": 12, "h": 8 }
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 }
     },
     {
-      "id": 8,
+      "id": 18,
       "type": "timeseries",
-      "title": "Inventario y calidad de datos",
+      "title": "Tasa de error en datos IoT",
+      "description": "Proporcion de lecturas invalidas sobre el total en cada ventana de tiempo. Picos indican problemas de sensor o red.",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(query_monitoring_total_camas) or vector(0)",
-          "legendFormat": "Camas",
+          "expr": "100 * ((sum(clamp_min(delta(query_monitoring_lecturas_invalidas[$__rate_interval]), 0)) or vector(0)) / clamp_min((sum(clamp_min(delta(query_monitoring_lecturas_validas[$__rate_interval]), 0)) or vector(0)) + (sum(clamp_min(delta(query_monitoring_lecturas_invalidas[$__rate_interval]), 0)) or vector(0)), 1))",
+          "legendFormat": "Tasa error",
           "refId": "A"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(query_monitoring_total_nodos) or vector(0)",
-          "legendFormat": "Nodos",
-          "refId": "B"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "sum(query_monitoring_lecturas_invalidas) or vector(0)",
-          "legendFormat": "Lecturas inválidas",
-          "refId": "C"
         }
       ],
       "fieldConfig": {
-        "defaults": { "unit": "none", "decimals": 0 },
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "auto"
+          }
+        },
         "overrides": []
       },
-      "gridPos": { "x": 0, "y": 13, "w": 24, "h": 8 }
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 }
+    },
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "Presion del pipeline de ingesta",
+      "description": "Diferencia entre mensajes encolados y procesados (ok). Valores positivos sostenidos indican cuello de botella en el procesamiento.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "(sum(rate(ingestion_broker_enqueue_total[$__rate_interval])) or vector(0)) - (sum(rate(ingestion_broker_processed_total{status=\"ok\"}[$__rate_interval])) or vector(0))",
+          "legendFormat": "Presion (encolados - procesados)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 2,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "gridPos": { "x": 12, "y": 24, "w": 12, "h": 8 }
     }
   ],
   "templating": { "list": [] },
