@@ -1,0 +1,155 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: rendimiento-api
+    folder: Vermicompost IoT
+    interval: 30s
+    rules:
+      - uid: ingestion-api-latencia-p95-alta
+        title: Latencia P95 Alta - API Ingesta
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="telemetry-ingestion-service"}[5m])) by (le))
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              expression: $B > 5
+              type: math
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 10m
+        annotations:
+          summary: "Latencia p95 alta en API de ingesta"
+          description: "La latencia p95 supero 5 s por al menos 10 minutos en telemetry-ingestion-service."
+        labels:
+          severity: warning
+
+      - uid: query-api-latencia-p95-alta
+        title: Latencia P95 Alta - API Consulta
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="query-monitoring-service"}[5m])) by (le))
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              expression: $B > 5
+              type: math
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 10m
+        annotations:
+          summary: "Latencia p95 alta en API de consulta"
+          description: "La latencia p95 supero 5 s por al menos 10 minutos en query-monitoring-service."
+        labels:
+          severity: warning
+
+      - uid: ingestion-api-error-rate-alta
+        title: Error Rate 5xx Alto - API Ingesta
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              expr: (sum(rate(http_requests_total{job="telemetry-ingestion-service",status=~"5.."}[5m])) / clamp_min(sum(rate(http_requests_total{job="telemetry-ingestion-service"}[5m])), 0.001))
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              expression: $B > 0.01
+              type: math
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 10m
+        annotations:
+          summary: "Error rate 5xx alto en API de ingesta"
+          description: "La tasa de respuestas 5xx es mayor a 1% en telemetry-ingestion-service durante al menos 10 minutos."
+        labels:
+          severity: critical
+
+      - uid: query-api-error-rate-alta
+        title: Error Rate 5xx Alto - API Consulta
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              expr: (sum(rate(http_requests_total{job="query-monitoring-service",status=~"5.."}[5m])) / clamp_min(sum(rate(http_requests_total{job="query-monitoring-service"}[5m])), 0.001))
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              expression: $B > 0.01
+              type: math
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 10m
+        annotations:
+          summary: "Error rate 5xx alto en API de consulta"
+          description: "La tasa de respuestas 5xx es mayor a 1% en query-monitoring-service durante al menos 10 minutos."
+        labels:
+          severity: critical

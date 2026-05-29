@@ -1,0 +1,155 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: sensores
+    folder: Vermicompost IoT
+    interval: 30s
+    rules:
+      - uid: sensor-caido
+        title: Sensor Caido
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              expr: query_monitoring_nodo_conectado
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              expression: $B < 1
+              type: math
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 30m
+        annotations:
+          summary: "Sensor {{ $labels.codigo_nodo }} caido"
+          description: "El sensor {{ $labels.codigo_nodo }} en {{ $labels.cama_nombre }} (cama ID: {{ $labels.cama_id }}) no ha reportado lecturas en los ultimos minutos. Verifique conectividad y estado del dispositivo."
+        labels:
+          severity: warning
+
+      - uid: ph-fuera-rango
+        title: pH Fuera de Rango
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              expr: query_sensor_ph
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              expression: $B < 6 || $B > 7.5
+              type: math
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 30m
+        annotations:
+          summary: "pH fuera de rango en {{ $labels.cama_nombre }}"
+          description: "El pH promedio en {{ $labels.cama_nombre }} (ID: {{ $labels.cama_id }}) es {{ $value | humanize }}. Rango optimo: 6-7.5. Revise condiciones del sustrato y enmiendas."
+        labels:
+          severity: warning
+
+      - uid: humedad-fuera-rango
+        title: Humedad Fuera de Rango
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              expr: query_sensor_humedad_relativa_percent
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              expression: $B < 70 || $B > 80
+              type: math
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 30m
+        annotations:
+          summary: "Humedad fuera de rango en {{ $labels.cama_nombre }}"
+          description: "La humedad relativa promedio en {{ $labels.cama_nombre }} (ID: {{ $labels.cama_id }}) es {{ $value | humanize }} %. Rango optimo: 70-80 %. Evalue riego y drenaje."
+        labels:
+          severity: warning
+
+      - uid: temperatura-fuera-rango
+        title: Temperatura Fuera de Rango
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              expr: query_sensor_temperatura_celsius
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              expression: $B < 20 || $B > 25
+              type: math
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 30m
+        annotations:
+          summary: "Temperatura fuera de rango en {{ $labels.cama_nombre }}"
+          description: "La temperatura promedio en {{ $labels.cama_nombre }} (ID: {{ $labels.cama_id }}) es {{ $value | humanize }} °C. Rango optimo: 20-25 °C. Revise condiciones ambientales y riego."
+        labels:
+          severity: warning

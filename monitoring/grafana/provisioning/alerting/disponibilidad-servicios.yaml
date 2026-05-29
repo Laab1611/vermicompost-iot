@@ -1,0 +1,81 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: disponibilidad-servicios
+    folder: Vermicompost IoT
+    interval: 30s
+    rules:
+      - uid: servicio-caido
+        title: Servicio Caido
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              expr: up{job=~"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana"} == 0
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              expression: $B < 1
+              type: math
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 2m
+        annotations:
+          summary: "Servicio {{ $labels.job }} no disponible"
+          description: "Prometheus no puede recolectar metricas del servicio {{ $labels.job }} durante al menos 2 minutos."
+        labels:
+          severity: critical
+
+      - uid: scrape-intermitente
+        title: Scrape Intermitente
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 900
+              to: 0
+            model:
+              expr: avg_over_time(up{job=~"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service|prometheus|grafana"}[10m])
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              expression: $B < 0.8
+              type: math
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: "Inestabilidad de scrape en {{ $labels.job }}"
+          description: "La disponibilidad promedio de scrape cayo por debajo de 80% en 10 minutos para {{ $labels.job }}."
+        labels:
+          severity: warning

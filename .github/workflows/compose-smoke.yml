@@ -1,0 +1,61 @@
+name: Compose Smoke
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create .env for CI
+        run: |
+          cat > .env << 'EOF'
+          API_BEARER_TOKEN=ci-test-token
+          GRAFANA_USER=admin
+          GRAFANA_PASSWORD=admin
+          GRAFANA_VIEWER_USER=viewer
+          GRAFANA_VIEWER_PASSWORD=viewer
+          GRAFANA_VIEWER_EMAIL=viewer@ci.local
+          GRAFANA_VIEWER_NAME=CI Viewer
+          DATABASE_URL=sqlite:////tmp/vermicompost-ci.db
+          CERT_SUBJECT_ALT_NAME=DNS:localhost,IP:127.0.0.1
+          EOF
+
+      - name: Start compose stack
+        run: |
+          docker compose up --build -d --wait nginx telemetry-ingestion-worker
+
+      - name: Smoke test endpoints
+        run: |
+          set -e
+          echo "=== Telemetry health ==="
+          curl -k --fail https://localhost:8443/telemetry/health
+          echo ""
+          echo "=== Query health ==="
+          curl -k --fail https://localhost:8443/query/health
+          echo ""
+          echo "=== Twins health ==="
+          curl -k --fail https://localhost:8443/twins/health
+          echo ""
+          echo "=== Grafana health ==="
+          curl -k --fail https://localhost:8443/grafana/api/health
+          echo ""
+          echo "All smoke tests passed ✓"
+
+      - name: Upload compose logs on failure
+        if: failure()
+        run: docker compose logs > /tmp/compose-logs.txt
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: compose-logs
+          path: /tmp/compose-logs.txt
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v

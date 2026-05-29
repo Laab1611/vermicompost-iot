@@ -1,0 +1,14 @@
+apiVersion: 1
+
+datasources:
+  - name: Query API
+    uid: query-api
+    type: yesoreyeram-infinity-datasource
+    access: proxy
+    isDefault: false
+    editable: false
+    jsonData:
+      auth_method: none
+      allowedHosts:
+        - http://query-monitoring-service:8000
+        - http://prometheus:9090

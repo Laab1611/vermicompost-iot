@@ -10,8 +10,7 @@
 
 ## Commands
 
-- Full stack uses the shared compose file: `docker compose up --build -d`.
-- Podman users can use the same file with the local wrapper: `source ~/Documents/code/py_venvs/podman_compose/bin/activate`, then `podman-compose up --build -d`. The compose-managed cert provisioner generates `.certs/localhost.crt` automatically.
+- Full stack uses the shared compose file through the local Podman Compose wrapper: `source /home/bastian/Documents/code/py_venvs/podman/bin/activate`, then `podman-compose up --build -d`. The compose-managed cert provisioner generates `.certs/localhost.crt` automatically.
 - Gateway smoke checks: `curl -k https://localhost:8443/telemetry/health`, `curl -k https://localhost:8443/query/health`, `curl -k https://localhost:8443/twins/health`.
 - Run a service locally from its service directory: `uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log`.
 - Run the ingestion worker locally from `telemetry-ingestion-service/`: `python -m app.worker`.

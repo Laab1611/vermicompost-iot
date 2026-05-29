@@ -1,0 +1,620 @@
+{
+  "id": null,
+  "uid": "vermicompost-api-slo",
+  "title": "Vermicompost IoT - SLO de APIs Backend",
+  "tags": ["vermicompost", "backend", "api", "slo"],
+  "timezone": "browser",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "30s",
+  "editable": false,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Estado SLO Backend",
+      "description": "3 = SANO, 2 = DEGRADADO (p95 > 3s, error rate > 1%, o servicio caido), 1 = CRITICO (p95 > 5s o condiciones multiples).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "clamp_min(3 - (((3 - count(up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\"}) or vector(3)) >= bool 1) + ((histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval]))) * 1000 or vector(0)) >= bool 5000) + ((histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval]))) * 1000 or vector(0)) >= bool 3000) + ((100 * (sum(rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",status=~\"5..\",handler!~\"/health|/metrics\"}[$__rate_interval])) or vector(0)) / clamp_min((sum(rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval])) or vector(0)), 0.001)) >= bool 1)), 1)",
+          "legendFormat": "Estado",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 2 },
+              { "color": "green", "value": 3 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": { "text": "CRITICO", "color": "red" },
+                "2": { "text": "DEGRADADO", "color": "orange" },
+                "3": { "text": "SANO", "color": "green" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Trafico funcional (req/s)",
+      "description": "Tasa de requests a endpoints funcionales. Excluye /health y /metrics.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "Req/s funcional",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "decimals": 2 },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Error rate 5xx funcional (%)",
+      "description": "Porcentaje de respuestas 5xx en endpoints funcionales. SLO: < 1%.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "100 * (sum(rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",status=~\"5..\",handler!~\"/health|/metrics\"}[$__rate_interval])) or vector(0)) / clamp_min((sum(rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval])) or vector(0)), 0.001)",
+          "legendFormat": "5xx funcional",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 1, "color": "orange" },
+              { "value": 5, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Latencia p95 funcional (ms)",
+      "description": "Percentil 95 de latencia en endpoints funcionales. SLO: <= 5000 ms.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "((histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval]))) * 1000) and on() (sum(rate(http_request_duration_seconds_count{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval])) > 0)) or vector(0)",
+          "legendFormat": "p95 funcional",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 3000, "color": "orange" },
+              { "value": 5000, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Servicios backend UP",
+      "description": "Conteo de servicios backend con scraping activo.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\"})",
+          "legendFormat": "Backend UP",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "red" },
+              { "value": 2, "color": "orange" },
+              { "value": 3, "color": "green" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 0, "y": 5, "w": 6, "h": 5 }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Trafico total observado (req/s)",
+      "description": "Tasa de requests total incluyendo healthchecks y scrapes.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum(rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "Req/s total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "decimals": 2 },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 6, "y": 5, "w": 6, "h": 5 }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Error rate 5xx total (%)",
+      "description": "Porcentaje de respuestas 5xx incluyendo todo el trafico.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "100 * (sum(rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",status=~\"5..\"}[$__rate_interval])) or vector(0)) / clamp_min((sum(rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\"}[$__rate_interval])) or vector(0)), 0.001)",
+          "legendFormat": "5xx total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 0.5, "color": "orange" },
+              { "value": 1, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 12, "y": 5, "w": 6, "h": 5 }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Latencia p95 total backend (ms)",
+      "description": "Percentil 95 de latencia incluyendo healthchecks y scrapes.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\"}[$__rate_interval]))) * 1000 or vector(0)",
+          "legendFormat": "p95 total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 3000, "color": "orange" },
+              { "value": 5000, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 18, "y": 5, "w": 6, "h": 5 }
+    },
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "SLO telemetry-ingestion-service",
+      "description": "UP + p95 funcional + error rate 5xx funcional.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "clamp_min(3 - (((1 - up{job=\"telemetry-ingestion-service\"}) or vector(0)) + ((histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"telemetry-ingestion-service\",handler!~\"/health|/metrics\"}[$__rate_interval]))) * 1000 or vector(0)) >= bool 3000) + ((histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"telemetry-ingestion-service\",handler!~\"/health|/metrics\"}[$__rate_interval]))) * 1000 or vector(0)) >= bool 5000) + ((100 * (sum(rate(http_requests_total{job=\"telemetry-ingestion-service\",status=~\"5..\",handler!~\"/health|/metrics\"}[$__rate_interval])) or vector(0)) / clamp_min((sum(rate(http_requests_total{job=\"telemetry-ingestion-service\",handler!~\"/health|/metrics\"}[$__rate_interval])) or vector(0)), 0.001)) >= bool 1)), 1)",
+          "legendFormat": "Estado",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 2 },
+              { "color": "green", "value": 3 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": { "text": "CRIT", "color": "red" },
+                "2": { "text": "DEG", "color": "orange" },
+                "3": { "text": "OK", "color": "green" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 0, "y": 10, "w": 8, "h": 4 }
+    },
+    {
+      "id": 15,
+      "type": "stat",
+      "title": "SLO query-monitoring-service",
+      "description": "UP + p95 funcional + error rate 5xx funcional.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "clamp_min(3 - (((1 - up{job=\"query-monitoring-service\"}) or vector(0)) + ((histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"query-monitoring-service\",handler!~\"/health|/metrics\"}[$__rate_interval]))) * 1000 or vector(0)) >= bool 3000) + ((histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"query-monitoring-service\",handler!~\"/health|/metrics\"}[$__rate_interval]))) * 1000 or vector(0)) >= bool 5000) + ((100 * (sum(rate(http_requests_total{job=\"query-monitoring-service\",status=~\"5..\",handler!~\"/health|/metrics\"}[$__rate_interval])) or vector(0)) / clamp_min((sum(rate(http_requests_total{job=\"query-monitoring-service\",handler!~\"/health|/metrics\"}[$__rate_interval])) or vector(0)), 0.001)) >= bool 1)), 1)",
+          "legendFormat": "Estado",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 2 },
+              { "color": "green", "value": 3 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": { "text": "CRIT", "color": "red" },
+                "2": { "text": "DEG", "color": "orange" },
+                "3": { "text": "OK", "color": "green" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 8, "y": 10, "w": 8, "h": 4 }
+    },
+    {
+      "id": 16,
+      "type": "stat",
+      "title": "SLO digital-twin-service",
+      "description": "UP + p95 funcional + error rate 5xx funcional.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "clamp_min(3 - (((1 - up{job=\"digital-twin-integration-service\"}) or vector(0)) + ((histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval]))) * 1000 or vector(0)) >= bool 3000) + ((histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval]))) * 1000 or vector(0)) >= bool 5000) + ((100 * (sum(rate(http_requests_total{job=\"digital-twin-integration-service\",status=~\"5..\",handler!~\"/health|/metrics\"}[$__rate_interval])) or vector(0)) / clamp_min((sum(rate(http_requests_total{job=\"digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval])) or vector(0)), 0.001)) >= bool 1)), 1)",
+          "legendFormat": "Estado",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 2 },
+              { "color": "green", "value": 3 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": { "text": "CRIT", "color": "red" },
+                "2": { "text": "DEG", "color": "orange" },
+                "3": { "text": "OK", "color": "green" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"], "fields": "" },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "gridPos": { "x": 16, "y": 10, "w": 8, "h": 4 }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Throughput funcional por servicio (req/s)",
+      "description": "Tasa de requests funcionales desglosada por servicio.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (job) (rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval])) or sum by (job) (0 * up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\"})",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "decimals": 2 },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Latencia p95 funcional por servicio (ms)",
+      "description": "Percentil 95 de latencia en endpoints funcionales por servicio.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "((histogram_quantile(0.95, sum by (le, job) (rate(http_request_duration_seconds_bucket{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval]))) * 1000) and on (job) (sum by (job) (rate(http_request_duration_seconds_count{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval])) > 0)) or sum by (job) (0 * up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\"})",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 3000, "color": "orange" },
+              { "value": 5000, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": { "x": 12, "y": 14, "w": 12, "h": 8 }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Error rate 5xx funcional por servicio (%)",
+      "description": "Porcentaje de respuestas 5xx en endpoints funcionales por servicio.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "100 * (sum by (job) (rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",status=~\"5..\",handler!~\"/health|/metrics\"}[$__rate_interval])) or sum by (job) (0 * up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\"})) / clamp_min((sum by (job) (rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval])) or sum by (job) (0 * up{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\"})), 0.001)",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "value": 0, "color": "green" },
+              { "value": 1, "color": "orange" },
+              { "value": 5, "color": "red" }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": { "x": 0, "y": 22, "w": 12, "h": 8 }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Trafico por handler funcional",
+      "description": "Tasa de requests por handler funcional, excluyendo /health y /metrics.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (job, handler) (rate(http_requests_total{job=~\"telemetry-ingestion-service|query-monitoring-service|digital-twin-integration-service\",handler!~\"/health|/metrics\"}[$__rate_interval]))",
+          "legendFormat": "{{job}} {{handler}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "decimals": 2 },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["last", "max", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "gridPos": { "x": 12, "y": 22, "w": 12, "h": 8 }
+    }
+  ],
+  "templating": { "list": [] },
+  "annotations": {
+    "list": [
+      { "name": "Eventos", "type": "dashboard", "builtIn": 1, "enable": true }
+    ]
+  }
+}

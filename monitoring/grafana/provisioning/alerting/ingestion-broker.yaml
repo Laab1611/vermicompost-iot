@@ -1,0 +1,210 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: ingestion-broker
+    folder: Vermicompost IoT
+    interval: 30s
+    rules:
+      - uid: brok-procesamiento-errores
+        title: Errores de Procesamiento - Broker Ingesta
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 900
+              to: 0
+            model:
+              expr: increase(ingestion_broker_processed_total{status="error"}[10m])
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              expression: $B > 0
+              type: math
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: "Errores de procesamiento en broker de ingesta"
+          description: "Se detectaron mensajes con error en telemetry-ingestion-service durante los ultimos 10 minutos."
+        labels:
+          severity: warning
+
+      - uid: ingestion-broker-lag-alto
+        title: Lag Alto - Broker Ingesta
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 900
+              to: 0
+            model:
+              expr: max_over_time(ingestion_redis_consumer_lag[10m])
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              expression: $B > 500
+              type: math
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 10m
+        annotations:
+          summary: "Lag alto del consumidor Redis en ingesta"
+          description: "Lag de consumidor por encima de 500 mensajes durante al menos 10 minutos."
+        labels:
+          severity: warning
+
+      - uid: ingestion-broker-pendientes-altos
+        title: Pendientes Altos - Broker Ingesta
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 900
+              to: 0
+            model:
+              expr: max_over_time(ingestion_redis_pending_messages[10m])
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              expression: $B > 250
+              type: math
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 10m
+        annotations:
+          summary: "Mensajes pendientes altos en Redis Streams"
+          description: "Mensajes pendientes por encima de 250 durante al menos 10 minutos."
+        labels:
+          severity: warning
+
+      - uid: ingestion-broker-buffer-estancado
+        title: Buffer Estancado - Broker Ingesta
+        condition: E
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 900
+              to: 0
+            model:
+              expr: avg_over_time(ingestion_batch_buffer_size[10m])
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 900
+              to: 0
+            model:
+              expr: increase(ingestion_broker_processed_total{status="ok"}[10m])
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+          - refId: D
+            datasourceUid: __expr__
+            model:
+              expression: C
+              reducer: last
+              type: reduce
+              refId: D
+          - refId: E
+            datasourceUid: __expr__
+            model:
+              expression: ($B > 0) * ($D == 0) > 0
+              type: math
+              refId: E
+        noDataState: OK
+        execErrState: Error
+        for: 10m
+        annotations:
+          summary: "Buffer de ingesta con estancamiento"
+          description: "Hay datos en buffer pero no se procesaron mensajes exitosos en 10 minutos."
+        labels:
+          severity: critical
+
+      - uid: ingestion-broker-latencia-p95-alta
+        title: Latencia P95 Alta - Broker Ingesta
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 900
+              to: 0
+            model:
+              expr: histogram_quantile(0.95, sum(rate(ingestion_broker_process_seconds_bucket[10m])) by (le))
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              expression: A
+              reducer: last
+              type: reduce
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              expression: $B > 2
+              type: math
+              refId: C
+        noDataState: OK
+        execErrState: Error
+        for: 10m
+        annotations:
+          summary: "Latencia p95 alta en procesamiento del broker"
+          description: "La latencia p95 de procesamiento de mensajes supero 2 s durante al menos 10 minutos."
+        labels:
+          severity: warning

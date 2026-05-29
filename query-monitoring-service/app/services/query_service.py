@@ -397,12 +397,14 @@ def get_monitoring_summary(db: Session, disconnect_minutes: int = 15) -> dict:
             .scalar()
             or 0
         )
+        lecturas_validas = db.query(func.count(Lectura.lectura_id)).scalar() or 0
         lecturas_invalidas = db.query(func.count(LecturaInvalida.lectura_invalida_id)).scalar() or 0
         result = {
             "total_camas": total_camas,
             "total_nodos": total_nodos,
             "nodos_conectados": max(total_nodos - nodos_desconectados, 0),
             "nodos_desconectados": nodos_desconectados,
+            "lecturas_validas": lecturas_validas,
             "lecturas_invalidas": lecturas_invalidas,
         }
         logger.debug(
@@ -419,6 +421,82 @@ def get_monitoring_summary(db: Session, disconnect_minutes: int = 15) -> dict:
     except SQLAlchemyError as exc:
         logger.exception("Query get_monitoring_summary failed")
         raise PersistenceError("error al consultar resumen de monitoreo") from exc
+
+
+def get_invalidaciones_count_by_causa(db: Session) -> list[dict]:
+    try:
+        rows = (
+            db.query(
+                LecturaInvalida.tipo_error,
+                func.count(LecturaInvalida.lectura_invalida_id).label("total"),
+            )
+            .group_by(LecturaInvalida.tipo_error)
+            .order_by(func.count(LecturaInvalida.lectura_invalida_id).desc())
+            .all()
+        )
+        logger.debug("Query get_invalidaciones_count_by_causa returned count=%s", len(rows))
+        return [{"tipo_error": r.tipo_error, "total": r.total} for r in rows]
+    except SQLAlchemyError as exc:
+        logger.exception("Query get_invalidaciones_count_by_causa failed")
+        raise PersistenceError("error al consultar invalidaciones por causa") from exc
+
+
+def get_errores_count_by_nodo(db: Session) -> list[dict]:
+    try:
+        rows = (
+            db.query(
+                LecturaInvalida.nodo_id,
+                NodoSensor.codigo_nodo,
+                NodoSensor.cama_id,
+                CamaVermicompostaje.nombre.label("cama_nombre"),
+                func.count(LecturaInvalida.lectura_invalida_id).label("total_errores"),
+            )
+            .outerjoin(NodoSensor, NodoSensor.nodo_id == LecturaInvalida.nodo_id)
+            .outerjoin(CamaVermicompostaje, CamaVermicompostaje.cama_id == NodoSensor.cama_id)
+            .group_by(LecturaInvalida.nodo_id, NodoSensor.codigo_nodo, NodoSensor.cama_id, CamaVermicompostaje.nombre)
+            .order_by(func.count(LecturaInvalida.lectura_invalida_id).desc())
+            .all()
+        )
+        logger.debug("Query get_errores_count_by_nodo returned count=%s", len(rows))
+        return [
+            {
+                "nodo_id": r.nodo_id,
+                "codigo_nodo": r.codigo_nodo,
+                "cama_id": r.cama_id,
+                "cama_nombre": r.cama_nombre,
+                "total_errores": r.total_errores,
+            }
+            for r in rows
+        ]
+    except SQLAlchemyError as exc:
+        logger.exception("Query get_errores_count_by_nodo failed")
+        raise PersistenceError("error al consultar errores por nodo") from exc
+
+
+def get_all_nodos_connection_status(db: Session, minutes: int = 15) -> list[dict]:
+    _validate_minutes(minutes)
+    try:
+        rows = (
+            db.query(NodoSensor, CamaVermicompostaje.nombre)
+            .join(CamaVermicompostaje, CamaVermicompostaje.cama_id == NodoSensor.cama_id)
+            .order_by(NodoSensor.nodo_id.asc())
+            .all()
+        )
+        return [
+            {
+                "nodo_id": nodo.nodo_id,
+                "codigo_nodo": nodo.codigo_nodo,
+                "cama_id": nodo.cama_id,
+                "cama_nombre": cama_nombre,
+                "conectado": _is_connected(nodo.ultima_lectura_recibida, minutes),
+            }
+            for nodo, cama_nombre in rows
+        ]
+    except (ValidationError,):
+        raise
+    except SQLAlchemyError as exc:
+        logger.exception("Query get_all_nodos_connection_status failed")
+        raise PersistenceError("error al consultar estado de conexion de nodos") from exc
 
 
 def get_latest_sensor_averages_by_cama(db: Session) -> list[dict]:
