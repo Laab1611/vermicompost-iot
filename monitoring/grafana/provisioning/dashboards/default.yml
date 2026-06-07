@@ -6,6 +6,7 @@ providers:
     disableDeletion: false
     editable: false
     updateIntervalSeconds: 30
+    folder: "Vermicompost IoT"
     options:
       path: /var/lib/grafana/dashboards
       foldersFromFilesStructure: false
